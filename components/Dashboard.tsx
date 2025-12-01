@@ -506,7 +506,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                      // List View Item
                      <div 
                        key={log.id} 
-                       className="animate-in fade-in slide-in-from-bottom-5"
+                       className="animate-in fade-in slide-in-from-bottom-2 duration-500"
                        style={{ animationDelay: `${index * 0.05}s`, animationFillMode: 'both' }}
                      >
                         <div 
@@ -590,7 +590,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                      // List View Item
                      <div 
                        key={log.id} 
-                       className="animate-in fade-in slide-in-from-bottom-5"
+                       className="animate-in fade-in slide-in-from-bottom-2 duration-500"
                        style={{ animationDelay: `${index * 0.05}s`, animationFillMode: 'both' }}
                      >
                         <div 
