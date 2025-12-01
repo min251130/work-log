@@ -1,7 +1,7 @@
 
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { LogEntry, WeeklyLogEntry, CalendarMarker, TodoItem } from '../types';
-import { Plus, Search, Calendar, Book, Edit2, Filter, X, LayoutGrid, List as ListIcon, GripVertical, ChevronLeft, ChevronRight, Download, Wand2, Archive, Dice5 as Dice, CheckCircle, Clock } from 'lucide-react';
+import { Plus, Search, Calendar, Book, Edit2, Filter, X, LayoutGrid, List as ListIcon, GripVertical, ChevronLeft, ChevronRight, Download, Wand2, Archive, Dice5 as Dice, CheckCircle, Clock, CalendarDays } from 'lucide-react';
 import { WashiTape } from './WashiTape';
 import { Sticker } from './Sticker';
 import { DailyLogModal } from './DailyLogModal';
@@ -243,6 +243,13 @@ export const Dashboard: React.FC<DashboardProps> = ({
     const newDate = new Date(calendarDate);
     newDate.setMonth(newDate.getMonth() + delta);
     setCalendarDate(newDate);
+  };
+  
+  const handleMonthPickerChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.value) return;
+    const [y, m] = e.target.value.split('-');
+    // Create date in local time
+    setCalendarDate(new Date(parseInt(y), parseInt(m) - 1, 1));
   };
 
   const jumpToToday = () => {
@@ -499,16 +506,32 @@ export const Dashboard: React.FC<DashboardProps> = ({
             <button onClick={() => changeMonth(-1)} className="p-3 hover:bg-white rounded-full shadow-sm text-gray-500 hover:text-blue-500 transition-all"><ChevronLeft /></button>
             
             <div className="flex flex-col items-center">
-                <h2 className="text-4xl font-cute font-bold text-gray-700 tracking-wide flex items-center gap-2">
-                  <span className="text-blue-400">{calendarDate.toLocaleDateString('en-US', { month: 'long' })}</span>
-                  <span className="text-gray-300">/</span>
-                  <span className="text-gray-600">{calendarDate.getFullYear()}</span>
-                </h2>
+                {/* Interactive Month Picker */}
+                <div className="relative group">
+                   {/* The Visible "Cute" Text */}
+                   <h2 className="text-4xl font-cute font-bold text-gray-700 tracking-wide flex items-center gap-2 cursor-pointer group-hover:text-blue-500 transition-colors">
+                     <span className="text-blue-400 group-hover:text-blue-600 transition-colors">{calendarDate.toLocaleDateString('en-US', { month: 'long' })}</span>
+                     <span className="text-gray-300">/</span>
+                     <span className="text-gray-600 group-hover:text-gray-800 transition-colors">{calendarDate.getFullYear()}</span>
+                     <div className="w-6 h-6 rounded-full bg-blue-50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                        <CalendarDays className="w-4 h-4 text-blue-400" />
+                     </div>
+                   </h2>
+                   
+                   {/* Invisible HTML Month Input overlaying the text */}
+                   <input 
+                      type="month"
+                      value={`${calendarDate.getFullYear()}-${String(calendarDate.getMonth() + 1).padStart(2, '0')}`}
+                      onChange={handleMonthPickerChange}
+                      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                      title="点击切换月份"
+                   />
+                </div>
                 
                 {/* Back to Today Button */}
                 <button 
                   onClick={jumpToToday}
-                  className="mt-2 text-xs text-blue-400 hover:text-blue-600 font-marker hover:bg-blue-50 px-3 py-1 rounded-full transition-colors flex items-center gap-1"
+                  className="mt-2 text-xs text-blue-400 hover:text-blue-600 font-marker hover:bg-blue-50 px-3 py-1 rounded-full transition-colors flex items-center gap-1 relative z-20"
                 >
                   回到今天
                 </button>
