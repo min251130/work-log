@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Daily Craft - Cute Journal</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🐼</text></svg>">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Indie+Flower&family=Patrick+Hand&family=Zeyada&family=Gaegu:wght@300;400;700&display=swap" rel="stylesheet">
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: {
+              hand: ['"Indie Flower"', 'cursive'],
+              marker: ['"Patrick Hand"', 'cursive'],
+              scribble: ['"Zeyada"', 'cursive'],
+              cute: ['"Gaegu"', 'cursive'],
+            },
+            colors: {
+              paper: '#fffdf5',
+              'paper-dark': '#f0efe9',
+              tape: 'rgba(255, 255, 255, 0.4)',
+              pastel: {
+                pink: '#ffccd5',
+                blue: '#c4def6',
+                yellow: '#fdfd96',
+                green: '#ccf2f4',
+                purple: '#e6ccff',
+                orange: '#ffeeb2',
+              }
+            },
+            backgroundImage: {
+              'grid-paper': "linear-gradient(#e5e7eb 1px, transparent 1px), linear-gradient(90deg, #e5e7eb 1px, transparent 1px)",
+              'dot-paper': "radial-gradient(#d1d5db 1px, transparent 1px)",
+              'gingham': "repeating-linear-gradient(45deg, #ffe4e6 25%, transparent 25%, transparent 75%, #ffe4e6 75%, #ffe4e6), repeating-linear-gradient(45deg, #ffe4e6 25%, #fff1f2 25%, #fff1f2 75%, #ffe4e6 75%, #ffe4e6)",
+            },
+            animation: {
+              'wiggle': 'wiggle 1s ease-in-out infinite',
+              'float': 'float 3s ease-in-out infinite',
+              'bounce-slow': 'bounce 3s infinite',
+            },
+            keyframes: {
+              wiggle: {
+                '0%, 100%': { transform: 'rotate(-3deg)' },
+                '50%': { transform: 'rotate(3deg)' },
+              },
+              float: {
+                '0%, 100%': { transform: 'translateY(0)' },
+                '50%': { transform: 'translateY(-10px)' },
+              }
+            }
+          }
+        }
+      }
+    </script>
+    <style>
+      /* --- Dopamine Cursors --- */
+      body {
+        background-color: #fff1f2;
+        background-image: 
+          linear-gradient(90deg, rgba(255, 200, 200, 0.1) 50%, transparent 50%),
+          linear-gradient(rgba(255, 200, 200, 0.1) 50%, transparent 50%);
+        background-size: 30px 30px;
+        /* Hot Pink Cursor for default */
+        cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2'%3E%3Cpath d='M5.5 2.5L12 18.5L15.5 13L21 11L5.5 2.5Z' fill='%23FF1493'/%3E%3C/svg%3E"), auto;
+      }
+      
+      /* Electric Blue Cursor for interactive elements */
+      button, a, .cursor-pointer, select, .mindmap-node {
+        cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2'%3E%3Cpath d='M5.5 2.5L12 18.5L15.5 13L21 11L5.5 2.5Z' fill='%2300BFFF'/%3E%3C/svg%3E"), pointer;
+      }
+
+      /* Custom I-Beam Cursor for Text Inputs (Pink) */
+      input[type="text"], input[type="date"], input[type="week"], textarea, .rich-text-editor {
+        cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2'%3E%3Cpath d='M12 4V20M8 4H16M8 20H16' stroke='%23FF1493' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E") 16 16, text !important;
+      }
+
+      /* Custom Scrollbar for a cleaner look */
+      ::-webkit-scrollbar {
+        width: 10px;
+      }
+      ::-webkit-scrollbar-track {
+        background: #fff0f5;
+      }
+      ::-webkit-scrollbar-thumb {
+        background: #fbcfe8;
+        border-radius: 10px;
+        border: 2px solid #fff0f5;
+      }
+      ::-webkit-scrollbar-thumb:hover {
+        background: #f472b6;
+      }
+
+      @media print {
+        @page { margin: 1cm; }
+        body {
+          background: white !important;
+          background-image: none !important;
+          -webkit-print-color-adjust: exact;
+          print-color-adjust: exact;
+          cursor: auto !important;
+        }
+        .no-print {
+          display: none !important;
+        }
+        textarea {
+          height: auto !important;
+          overflow: visible !important;
+          resize: none;
+        }
+        .min-h-\[80vh\] {
+          min-height: auto !important;
+          box-shadow: none !important;
+          border: 1px solid #ddd !important;
+        }
+      }
+
+      /* --- Mind Map CSS --- */
+      .mindmap-tree {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        margin: 20px 0;
+      }
+      
+      .mindmap-node {
+        position: relative;
+        padding: 8px 16px;
+        border-radius: 20px;
+        background-color: white;
+        border: 2px solid #c4def6;
+        box-shadow: 2px 2px 0px #c4def6;
+        margin: 10px;
+        text-align: center;
+        font-family: 'Gaegu', cursive;
+        z-index: 2;
+        transition: all 0.2s;
+      }
+      
+      .mindmap-node:hover {
+        transform: scale(1.05);
+        box-shadow: 3px 3px 0px #93c5fd;
+      }
+
+      .mindmap-children {
+        display: flex;
+        justify-content: center;
+        position: relative;
+        padding-top: 20px;
+      }
+
+      /* Connector Lines */
+      .mindmap-children::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 50%;
+        width: 2px;
+        height: 20px;
+        background-color: #cbd5e1;
+        z-index: 1;
+      }
+
+      .mindmap-branch {
+        position: relative;
+        padding: 0 10px;
+      }
+
+      .mindmap-branch::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 50%;
+        width: 2px;
+        height: 20px;
+        background-color: #cbd5e1;
+        transform: translateY(-100%);
+      }
+      
+      .mindmap-branch:first-child::after {
+        content: '';
+        position: absolute;
+        top: -20px;
+        left: 50%;
+        width: 50%;
+        height: 2px;
+        background-color: #cbd5e1;
+      }
+      .mindmap-branch:last-child::after {
+        content: '';
+        position: absolute;
+        top: -20px;
+        left: 0;
+        width: 50%;
+        height: 2px;
+        background-color: #cbd5e1;
+      }
+      /* Middle branches horizontal connector */
+      .mindmap-branch:not(:first-child):not(:last-child)::after {
+        content: '';
+        position: absolute;
+        top: -20px;
+        left: 0;
+        width: 100%;
+        height: 2px;
+        background-color: #cbd5e1;
+      }
+
+      /* Remove horizontal line for single child */
+      .mindmap-children:only-child > .mindmap-branch::after {
+        display: none;
+      }
+
+      /* --- Internal Link Styles --- */
+      .internal-link {
+        display: inline-flex;
+        align-items: center;
+        background-color: #fef3c7;
+        color: #d97706;
+        padding: 0 6px;
+        border-radius: 4px;
+        text-decoration: none;
+        border-bottom: 2px dashed #d97706;
+        margin: 0 2px;
+        cursor: pointer;
+        font-family: 'Patrick Hand', cursive;
+        transition: all 0.2s;
+      }
+      .internal-link:hover {
+        background-color: #fde68a;
+        transform: translateY(-1px);
+      }
+      
+      /* --- Custom Vibrant Caret --- */
+      .caret-dopamine {
+        caret-color: #FF007F; /* Fluorescent Pink */
+      }
+
+      /* --- Animation Polyfills for tailwindcss-animate --- 
+         These are needed because the CDN build doesn't include the animate plugin.
+      */
+      .animate-in { animation-duration: 0.3s; animation-fill-mode: both; }
+      .fade-in { animation-name: fadeIn; }
+      .zoom-in-95 { animation-name: zoomIn95; }
+      .slide-in-from-bottom-5 { animation-name: slideInBottom5; }
+      .slide-in-from-bottom-10 { animation-name: slideInBottom10; }
+      .slide-in-from-top-2 { animation-name: slideInTop2; }
+      .spin-in-3 { animation-name: spinIn; }
+
+      @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+      @keyframes zoomIn95 { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+      @keyframes slideInBottom5 { from { transform: translateY(1.25rem); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+      @keyframes slideInBottom10 { from { transform: translateY(2.5rem); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+      @keyframes slideInTop2 { from { transform: translateY(-0.5rem); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+      @keyframes spinIn { from { transform: rotate(-90deg); opacity: 0; } to { transform: rotate(0deg); opacity: 1; } }
+
+    </style>
+    
+    <!-- Global Error Handler to show crashes on screen -->
+    <div id="startup-error" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(255,200,200,0.95); z-index:99999; padding:20px; overflow:auto; color: #7f1d1d; font-family: monospace;">
+        <h2 style="font-size: 20px; font-weight: bold; margin-bottom: 10px;">⚠️ OOPS! Something went wrong</h2>
+        <p>如果看到这个页面，说明程序崩溃了。</p>
+        <div id="error-message" style="background:white; padding:10px; border:1px solid #fecaca; margin-top:10px; border-radius:4px; white-space:pre-wrap;"></div>
+    </div>
+    <script>
+      window.addEventListener('error', function(event) {
+        var el = document.getElementById('startup-error');
+        var msg = document.getElementById('error-message');
+        el.style.display = 'block';
+        msg.textContent = "Error: " + event.message + "\nFile: " + event.filename + "\nLine: " + event.lineno;
+      });
+      window.addEventListener('unhandledrejection', function(event) {
+        var el = document.getElementById('startup-error');
+        var msg = document.getElementById('error-message');
+        el.style.display = 'block';
+        msg.textContent = "Promise Rejection: " + (event.reason ? event.reason.toString() : 'Unknown');
+      });
+    </script>
+
+  <script type="importmap">
+{
+  "imports": {
+    "react": "https://esm.sh/react@18.2.0",
+    "react-dom": "https://esm.sh/react-dom@18.2.0",
+    "react-dom/client": "https://esm.sh/react-dom@18.2.0/client",
+    "react/jsx-runtime": "https://esm.sh/react@18.2.0/jsx-runtime",
+    "lucide-react": "https://esm.sh/lucide-react@0.294.0",
+    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
+    "react/": "https://aistudiocdn.com/react@^19.2.0/"
+  }
+}
+</script>
+</head>
+  <body>
+    <!-- Simple Loading Indicator -->
+    <div id="loading" style="position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);font-family:cursive;color:#fbcfe8;font-size:24px;text-align:center;">
+      🐼 Loading Daily Craft...<br/>
+      <span style="font-size:14px;color:#aaa;">v1.6</span>
+    </div>
+    <div id="root"></div>
+    <script>
+      // Hide loading when root is populated (handled by React usually, but this is a fallback)
+      const observer = new MutationObserver((mutations) => {
+        if (document.getElementById('root').childElementCount > 0) {
+           const loader = document.getElementById('loading');
+           if(loader) loader.style.display = 'none';
+        }
+      });
+      observer.observe(document.getElementById('root'), { childList: true });
+    </script>
+    <script type="module" src="./index.tsx"></script>
+  </body>
+</html>
