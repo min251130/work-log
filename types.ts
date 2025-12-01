@@ -45,10 +45,17 @@ export interface StickerData {
 export interface TodoItem {
   id: string;
   task: string;
+  date?: string; // YYYY-MM-DD, added for calendar sync
   time?: string;
   location?: string;
   people?: string;
   completed: boolean;
+}
+
+export interface CalendarMarker {
+  date: string; // YYYY-MM-DD
+  color: string;
+  label: string;
 }
 
 export type ViewMode = 'list' | 'edit-daily' | 'edit-weekly' | 'edit-mindmap';

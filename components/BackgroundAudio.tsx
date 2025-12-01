@@ -1,19 +1,20 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Music, VolumeX, Volume2, Settings, Disc, Radio } from 'lucide-react';
+import { Music, VolumeX, Volume2, Settings, Disc, Radio, AlertCircle } from 'lucide-react';
 
 type AudioSource = 'piano' | 'custom';
 
-// Updated to user specific NetEase music link
-const DEFAULT_BGM_URL = "https://m701.music.126.net/20251202045442/a3cc1d2cc91a5fe940e133d303db6065/jdymusic/obj/wo3DlMOGwrbDjj7DisKw/16165543602/64bf/2f53/75b8/ae5a8097fb9b12cc9e059f50e497df10.mp3?vuutv=AePB7nEG4QPV/ZDPA0SWmeyRghh4sPXGRqFeFpuZZjOhY115ALJoaBEoVPDLREZbZMv+6DUgSO+4rt5CjYN3bXuQz4C5E5wrFPKBQE49I/3en2E20f/p6gWex2ONL+P+CKjYWWVmax/SuBFAN+FCMOflBM20VTfhZRPVqE2KEWpTEYm9xa8SoOJfPIu6+q5ETsVpAn7f0FBJUY+ma5alPuIqHq8abXHnVK4qkilj4+VzvA3aAeG0ucTy6u7jF/WX/S3fgRhwS/1fLOmr5TgfHbKdp3yLvIqznvhH+aeI8eYZfI7nm2lUEROLaWTDSqpsxKw3SSwBUP3y1Gg7Q3K2aDqAUkMQO5fIBKNQqxHLxNPr4uLxG0ptdayu0HHbROII&cdntag=bWFyaz1vc193ZWIscXVhbGl0eV9zdGFuZGFyZA"; 
+// Updated to a stable, royalty-free Lo-Fi track from Pixabay
+const DEFAULT_BGM_URL = "https://cdn.pixabay.com/audio/2022/05/27/audio_1808fbf07a.mp3"; 
 
 // Increment this to force a BGM update on user's browsers
-const CURRENT_VERSION = 'v4';
+const CURRENT_VERSION = 'v6';
 
 export const BackgroundAudio: React.FC = () => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [musicSource, setMusicSource] = useState<AudioSource>('custom');
   const [customUrl, setCustomUrl] = useState(DEFAULT_BGM_URL);
+  const [error, setError] = useState(false);
   
   const audioElemRef = useRef<HTMLAudioElement | null>(null);
 
@@ -58,10 +59,18 @@ export const BackgroundAudio: React.FC = () => {
          audioElemRef.current.play().catch(e => {
            console.error("Autoplay prevented or link error", e);
            setIsPlaying(false);
+           handleError();
          });
       }
     }
   }, [customUrl]);
+
+  const handleError = () => {
+    setError(true);
+    setIsPlaying(false);
+    // Reset error state after 3 seconds
+    setTimeout(() => setError(false), 3000);
+  };
 
   const togglePlay = async () => {
     if (!audioElemRef.current) return;
@@ -73,10 +82,10 @@ export const BackgroundAudio: React.FC = () => {
       try {
         await audioElemRef.current.play();
         setIsPlaying(true);
+        setError(false);
       } catch (e) {
         console.error("Audio play failed", e);
-        alert("无法播放背景音乐，可能是浏览器阻止了自动播放，或者链接无效。");
-        setIsPlaying(false);
+        handleError();
       }
     }
   };
@@ -135,16 +144,22 @@ export const BackgroundAudio: React.FC = () => {
         <button
           onClick={togglePlay}
           className={`relative p-3 rounded-full transition-all duration-500 transform hover:scale-105 ${
-            isPlaying 
-              ? 'bg-gradient-to-tr from-pastel-pink to-pink-300 text-white shadow-md' 
-              : 'bg-gray-100 text-gray-400 hover:bg-gray-200'
+            error 
+              ? 'bg-red-100 text-red-500 hover:bg-red-200' 
+              : isPlaying 
+                ? 'bg-gradient-to-tr from-pastel-pink to-pink-300 text-white shadow-md' 
+                : 'bg-gray-100 text-gray-400 hover:bg-gray-200'
           }`}
-          title={isPlaying ? "暂停" : "播放"}
+          title={error ? "播放失败，请检查链接或网络" : (isPlaying ? "暂停" : "播放背景音乐")}
         >
-          {isPlaying && (
+          {isPlaying && !error && (
             <div className="absolute -top-1 -right-1 animate-ping h-3 w-3 rounded-full bg-pink-200 opacity-75"></div>
           )}
-          {isPlaying ? <Volume2 className="w-5 h-5 animate-pulse" /> : <VolumeX className="w-5 h-5" />}
+          {error ? (
+             <AlertCircle className="w-5 h-5" />
+          ) : (
+             isPlaying ? <Volume2 className="w-5 h-5 animate-pulse" /> : <VolumeX className="w-5 h-5" />
+          )}
         </button>
 
         <button

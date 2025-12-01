@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { TodoItem } from '../types';
-import { ClipboardList, Plus, Clock, MapPin, Users, X, Check, ChevronUp, ChevronDown } from 'lucide-react';
+import { ClipboardList, Plus, Clock, MapPin, Users, X, Check, ChevronUp, ChevronDown, Calendar, RotateCcw } from 'lucide-react';
 import { getTodos, saveTodos, generateUUID } from '../services/storage';
 import { WashiTape } from './WashiTape';
 import { Sticker } from './Sticker';
@@ -14,8 +14,15 @@ export const TodoModule: React.FC<TodoModuleProps> = ({ onTaskCompleted }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [todos, setTodos] = useState<TodoItem[]>([]);
   
+  // Helper for local ISO date
+  const getLocalISODate = () => {
+      const d = new Date();
+      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  };
+
   // Form State
   const [task, setTask] = useState('');
+  const [date, setDate] = useState(getLocalISODate());
   const [time, setTime] = useState('');
   const [location, setLocation] = useState('');
   const [people, setPeople] = useState('');
@@ -24,12 +31,20 @@ export const TodoModule: React.FC<TodoModuleProps> = ({ onTaskCompleted }) => {
     setTodos(getTodos());
   }, []);
 
+  // Reset date to today whenever opened
+  useEffect(() => {
+    if (isOpen) {
+      setDate(getLocalISODate());
+    }
+  }, [isOpen]);
+
   const handleAddTodo = () => {
     if (!task.trim()) return;
 
     const newTodo: TodoItem = {
       id: generateUUID(),
       task,
+      date: date || undefined,
       time,
       location,
       people,
@@ -40,7 +55,7 @@ export const TodoModule: React.FC<TodoModuleProps> = ({ onTaskCompleted }) => {
     setTodos(updatedTodos);
     saveTodos(updatedTodos);
 
-    // Reset form
+    // Reset form (keep date as is for convenience, or reset? let's keep it as is for bulk entry)
     setTask('');
     setTime('');
     setLocation('');
@@ -95,13 +110,43 @@ export const TodoModule: React.FC<TodoModuleProps> = ({ onTaskCompleted }) => {
                 />
                 
                 <div className="grid grid-cols-2 gap-3">
+                   {/* Date Input */}
+                   <div className="flex items-center bg-white rounded-lg px-3 py-2 border border-yellow-200 shadow-sm focus-within:ring-2 focus-within:ring-yellow-100 focus-within:border-yellow-400 transition-all">
+                      <Calendar className="w-5 h-5 text-yellow-500 mr-2 flex-shrink-0" />
+                      <input 
+                        type="date"
+                        value={date}
+                        onChange={e => setDate(e.target.value)}
+                        className="w-full text-sm outline-none font-marker text-gray-800 placeholder-gray-400 bg-transparent"
+                      />
+                      <button 
+                         onClick={() => setDate(getLocalISODate())}
+                         className="ml-1 p-1 text-gray-300 hover:text-yellow-500 rounded-full"
+                         title="回到今天"
+                      >
+                         <RotateCcw className="w-3 h-3" />
+                      </button>
+                   </div>
+                   {/* Time Input */}
                    <div className="flex items-center bg-white rounded-lg px-3 py-2 border border-yellow-200 shadow-sm focus-within:ring-2 focus-within:ring-yellow-100 focus-within:border-yellow-400 transition-all">
                       <Clock className="w-5 h-5 text-yellow-500 mr-2 flex-shrink-0" />
                       <input 
+                        type="time"
                         value={time}
                         onChange={e => setTime(e.target.value)}
-                        placeholder="时间" 
-                        className="w-full text-base outline-none font-marker text-gray-800 placeholder-gray-400 bg-transparent"
+                        className="w-full text-sm outline-none font-marker text-gray-800 placeholder-gray-400 bg-transparent"
+                      />
+                   </div>
+                </div>
+                
+                <div className="grid grid-cols-2 gap-3">
+                   <div className="flex items-center bg-white rounded-lg px-3 py-2 border border-yellow-200 shadow-sm focus-within:ring-2 focus-within:ring-yellow-100 focus-within:border-yellow-400 transition-all">
+                      <MapPin className="w-5 h-5 text-yellow-500 mr-2 flex-shrink-0" />
+                      <input 
+                        value={location}
+                        onChange={e => setLocation(e.target.value)}
+                        placeholder="地点" 
+                        className="w-full text-sm outline-none font-marker text-gray-800 placeholder-gray-400 bg-transparent"
                       />
                    </div>
                    <div className="flex items-center bg-white rounded-lg px-3 py-2 border border-yellow-200 shadow-sm focus-within:ring-2 focus-within:ring-yellow-100 focus-within:border-yellow-400 transition-all">
@@ -110,27 +155,19 @@ export const TodoModule: React.FC<TodoModuleProps> = ({ onTaskCompleted }) => {
                         value={people}
                         onChange={e => setPeople(e.target.value)}
                         placeholder="人员" 
-                        className="w-full text-base outline-none font-marker text-gray-800 placeholder-gray-400 bg-transparent"
+                        className="w-full text-sm outline-none font-marker text-gray-800 placeholder-gray-400 bg-transparent"
                       />
                    </div>
                 </div>
-                <div className="flex gap-3 items-center">
-                   <div className="flex items-center bg-white rounded-lg px-3 py-2 border border-yellow-200 flex-grow shadow-sm focus-within:ring-2 focus-within:ring-yellow-100 focus-within:border-yellow-400 transition-all">
-                      <MapPin className="w-5 h-5 text-yellow-500 mr-2 flex-shrink-0" />
-                      <input 
-                        value={location}
-                        onChange={e => setLocation(e.target.value)}
-                        placeholder="地点" 
-                        className="w-full text-base outline-none font-marker text-gray-800 placeholder-gray-400 bg-transparent"
-                      />
-                   </div>
+
+                <div className="flex justify-end">
                    <button 
                      onClick={handleAddTodo}
                      disabled={!task}
-                     className="bg-yellow-400 hover:bg-yellow-500 text-white rounded-lg px-4 py-2 shadow-md disabled:opacity-50 transition-all transform active:scale-95 flex items-center justify-center flex-shrink-0"
+                     className="bg-yellow-400 hover:bg-yellow-500 text-white rounded-lg px-6 py-2 shadow-md disabled:opacity-50 transition-all transform active:scale-95 flex items-center justify-center font-bold"
                      title="添加任务"
                    >
-                     <Plus className="w-6 h-6" />
+                     <Plus className="w-5 h-5 mr-1" /> 添加
                    </button>
                 </div>
              </div>
@@ -156,9 +193,9 @@ export const TodoModule: React.FC<TodoModuleProps> = ({ onTaskCompleted }) => {
                       <div className="flex-grow min-w-0">
                         <div className="font-hand text-xl text-gray-900 leading-tight break-words font-medium">{t.task}</div>
                         <div className="flex flex-wrap gap-2 mt-2">
+                          {t.date && <span className="text-sm font-bold bg-gray-100 text-gray-600 px-2 py-0.5 rounded flex items-center gap-1 border border-gray-200"><Calendar className="w-3.5 h-3.5"/> {t.date}</span>}
                           {t.time && <span className="text-sm font-bold bg-blue-50 text-blue-600 px-2 py-0.5 rounded flex items-center gap-1 border border-blue-100"><Clock className="w-3.5 h-3.5"/> {t.time}</span>}
                           {t.location && <span className="text-sm font-bold bg-green-50 text-green-600 px-2 py-0.5 rounded flex items-center gap-1 border border-green-100"><MapPin className="w-3.5 h-3.5"/> {t.location}</span>}
-                          {t.people && <span className="text-sm font-bold bg-pink-50 text-pink-600 px-2 py-0.5 rounded flex items-center gap-1 border border-pink-100"><Users className="w-3.5 h-3.5"/> {t.people}</span>}
                         </div>
                       </div>
 

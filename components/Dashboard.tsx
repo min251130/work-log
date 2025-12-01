@@ -1,10 +1,12 @@
 
-import React, { useState, useMemo, useRef } from 'react';
-import { LogEntry, WeeklyLogEntry } from '../types';
-import { Plus, Search, Calendar, Book, Edit2, Filter, X, LayoutGrid, List as ListIcon, GripVertical, ChevronLeft, ChevronRight, Download, Wand2, Archive, Dice5 as Dice } from 'lucide-react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
+import { LogEntry, WeeklyLogEntry, CalendarMarker, TodoItem } from '../types';
+import { Plus, Search, Calendar, Book, Edit2, Filter, X, LayoutGrid, List as ListIcon, GripVertical, ChevronLeft, ChevronRight, Download, Wand2, Archive, Dice5 as Dice, CheckCircle, Clock } from 'lucide-react';
 import { WashiTape } from './WashiTape';
 import { Sticker } from './Sticker';
 import { DailyLogModal } from './DailyLogModal';
+import { WeeklyLogModal } from './WeeklyLogModal';
+import { getMarkers, saveMarker, deleteMarker, getWeekNumberFromDate, getTodos, saveWeeklyLog } from '../services/storage';
 
 interface DashboardProps {
   logs: LogEntry[];
@@ -20,6 +22,29 @@ interface DashboardProps {
   onQuickSaveDaily: (entry: LogEntry) => void;
 }
 
+// Define Dopamine Color Palette for Weeks (Rows)
+const WEEK_THEMES = [
+  { bg: 'bg-rose-100', text: 'text-rose-600', border: 'border-rose-200', hover: 'hover:bg-rose-200', icon: 'text-rose-500' },
+  { bg: 'bg-orange-100', text: 'text-orange-600', border: 'border-orange-200', hover: 'hover:bg-orange-200', icon: 'text-orange-500' },
+  { bg: 'bg-amber-100', text: 'text-amber-600', border: 'border-amber-200', hover: 'hover:bg-amber-200', icon: 'text-amber-500' },
+  { bg: 'bg-emerald-100', text: 'text-emerald-600', border: 'border-emerald-200', hover: 'hover:bg-emerald-200', icon: 'text-emerald-500' },
+  { bg: 'bg-cyan-100', text: 'text-cyan-600', border: 'border-cyan-200', hover: 'hover:bg-cyan-200', icon: 'text-cyan-500' },
+  { bg: 'bg-blue-100', text: 'text-blue-600', border: 'border-blue-200', hover: 'hover:bg-blue-200', icon: 'text-blue-500' },
+  { bg: 'bg-violet-100', text: 'text-violet-600', border: 'border-violet-200', hover: 'hover:bg-violet-200', icon: 'text-violet-500' },
+  { bg: 'bg-fuchsia-100', text: 'text-fuchsia-600', border: 'border-fuchsia-200', hover: 'hover:bg-fuchsia-200', icon: 'text-fuchsia-500' },
+];
+
+// Define Day Headers (Columns)
+const DAY_STYLES = [
+  { label: 'SUN', full: 'Sunday', bg: 'bg-rose-50', text: 'text-rose-500' },
+  { label: 'MON', full: 'Monday', bg: 'bg-orange-50', text: 'text-orange-500' },
+  { label: 'TUE', full: 'Tuesday', bg: 'bg-amber-50', text: 'text-amber-500' },
+  { label: 'WED', full: 'Wednesday', bg: 'bg-emerald-50', text: 'text-emerald-500' },
+  { label: 'THU', full: 'Thursday', bg: 'bg-cyan-50', text: 'text-cyan-500' },
+  { label: 'FRI', full: 'Friday', bg: 'bg-blue-50', text: 'text-blue-500' },
+  { label: 'SAT', full: 'Saturday', bg: 'bg-violet-50', text: 'text-violet-500' },
+];
+
 export const Dashboard: React.FC<DashboardProps> = ({ 
   logs, 
   weeklyLogs, 
@@ -33,8 +58,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
   onExportAllWeekly,
   onQuickSaveDaily
 }) => {
-  // Default to list view as requested
-  const [viewMode, setViewMode] = useState<'grid' | 'list' | 'calendar'>('list');
+  // Default to Calendar view as requested
+  const [viewMode, setViewMode] = useState<'grid' | 'list' | 'calendar'>('calendar');
   const [searchTerm, setSearchTerm] = useState('');
   
   // Drag and Drop Refs
@@ -52,9 +77,42 @@ export const Dashboard: React.FC<DashboardProps> = ({
   const [calendarDate, setCalendarDate] = useState(new Date());
   const [modalDate, setModalDate] = useState<string | null>(null);
   const [modalLog, setModalLog] = useState<LogEntry | undefined>(undefined);
+  
+  // Weekly Modal State
+  const [modalWeekNumber, setModalWeekNumber] = useState<string | null>(null);
+  const [modalWeeklyLog, setModalWeeklyLog] = useState<WeeklyLogEntry | undefined>(undefined);
+
+  // Markers & Todos State
+  const [markers, setMarkers] = useState<CalendarMarker[]>([]);
+  const [todos, setTodos] = useState<TodoItem[]>([]);
 
   // Surprise Dice State
   const [surpriseItem, setSurpriseItem] = useState<{ text: string; date: string; mood: string } | null>(null);
+
+  // Real-time Clock
+  const [currentTime, setCurrentTime] = useState(new Date());
+
+  useEffect(() => {
+    // Update clock every second
+    const timer = setInterval(() => setCurrentTime(new Date()), 1000);
+    
+    // Refresh local data
+    setMarkers(getMarkers());
+    setTodos(getTodos());
+
+    return () => clearInterval(timer);
+  }, []);
+
+  // Force refresh aux data when needed
+  useEffect(() => {
+    setMarkers(getMarkers());
+    setTodos(getTodos());
+  }, [logs, weeklyLogs]); 
+
+  const refreshAuxData = () => {
+    setMarkers(getMarkers());
+    setTodos(getTodos());
+  }
 
   // Extract unique moods for dropdown
   const uniqueMoods = useMemo(() => {
@@ -176,24 +234,63 @@ export const Dashboard: React.FC<DashboardProps> = ({
   const getDaysInMonth = (year: number, month: number) => new Date(year, month + 1, 0).getDate();
   const getFirstDayOfMonth = (year: number, month: number) => new Date(year, month, 1).getDay();
 
+  // Helper to get local date string YYYY-MM-DD
+  const getLocalISODate = (d: Date) => {
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  };
+
   const changeMonth = (delta: number) => {
     const newDate = new Date(calendarDate);
     newDate.setMonth(newDate.getMonth() + delta);
     setCalendarDate(newDate);
   };
 
+  const jumpToToday = () => {
+    setCalendarDate(new Date());
+  };
+
   const handleDateClick = (day: number) => {
-    const dateStr = new Date(calendarDate.getFullYear(), calendarDate.getMonth(), day).toISOString().split('T')[0];
+    // Construct local date string correctly
+    const year = calendarDate.getFullYear();
+    const month = calendarDate.getMonth();
+    const dateObj = new Date(year, month, day);
+    const dateStr = getLocalISODate(dateObj);
+    
     const dailyLog = logs.find(l => l.date.startsWith(dateStr));
     
     setModalDate(dateStr);
     setModalLog(dailyLog);
   };
 
+  const handleWeekClick = (weekNumStr: string) => {
+    const foundLog = weeklyLogs.find(w => w.weekNumber === weekNumStr);
+    setModalWeekNumber(weekNumStr);
+    setModalWeeklyLog(foundLog);
+  };
+
   const handleModalSave = (log: LogEntry) => {
     onQuickSaveDaily(log);
     setModalDate(null);
     setModalLog(undefined);
+    refreshAuxData();
+  };
+  
+  const handleWeeklyModalSave = (log: WeeklyLogEntry) => {
+    saveWeeklyLog(log);
+    setModalWeekNumber(null);
+    setModalWeeklyLog(undefined);
+    window.location.reload(); 
+  };
+
+  const handleMarkerSave = (marker: CalendarMarker | null) => {
+    if (modalDate) {
+      if (marker) {
+        saveMarker(marker);
+      } else {
+        deleteMarker(modalDate);
+      }
+      refreshAuxData();
+    }
   };
 
   // --- Dice Logic ---
@@ -226,56 +323,203 @@ export const Dashboard: React.FC<DashboardProps> = ({
     const month = calendarDate.getMonth();
     const daysInMonth = getDaysInMonth(year, month);
     const firstDay = getFirstDayOfMonth(year, month);
-    const days = [];
+    const cells = [];
+    
+    // Check "Today"
+    const todayStr = getLocalISODate(new Date());
 
-    // Empty cells for days before start of month
-    for (let i = 0; i < firstDay; i++) {
-      days.push(<div key={`empty-${i}`} className="h-24 bg-transparent"></div>);
-    }
+    // Week Number Logic
+    // Start from the first week of the month view (which might start in previous month)
+    const startDate = new Date(year, month, 1);
+    startDate.setDate(startDate.getDate() - startDate.getDay()); // Go to Sunday
 
-    // Days
-    for (let day = 1; day <= daysInMonth; day++) {
-      const dateStr = new Date(year, month, day).toISOString().split('T')[0];
-      const log = logs.find(l => l.date.startsWith(dateStr));
+    // Headers - Row 1 (Day Names)
+    // Corner Cell
+    cells.push(
+      <div key="h-corner" className="flex items-end justify-center pb-2">
+         <div className="bg-gray-800 text-white text-[10px] font-bold px-2 py-0.5 rounded-full font-marker">WEEK</div>
+      </div>
+    );
+    // Day Name Cells
+    DAY_STYLES.forEach((style) => {
+        cells.push(
+            <div key={`h-${style.label}`} className={`text-center py-2 rounded-lg mb-2 ${style.bg}`}>
+                <div className={`font-cute font-bold text-xl ${style.text}`}>{style.label}</div>
+            </div>
+        );
+    });
+
+    // Calendar Grid Construction
+    let currentDay = 1;
+    
+    // Calculate total rows needed
+    const totalSlots = firstDay + daysInMonth;
+    const totalRows = Math.ceil(totalSlots / 7);
+
+    for (let row = 0; row < totalRows; row++) {
+      // 1. Week Number Column (Row Header)
+      const weekDate = new Date(year, month, 1 + (row * 7) - firstDay + 1); 
+      // Adjust if we are in the padding zone of previous month
+      if (row === 0 && firstDay > 1) {
+         // rough approx is fine for visual
+      }
+      const weekNumStr = getWeekNumberFromDate(weekDate);
+      const shortWeekNum = weekNumStr.split('-W')[1];
+      const hasWeeklyLog = weeklyLogs.some(w => w.weekNumber === weekNumStr);
       
-      days.push(
+      // Select Color Theme based on Week Number
+      const weekInt = parseInt(shortWeekNum, 10) || 0;
+      const theme = WEEK_THEMES[weekInt % WEEK_THEMES.length];
+
+      cells.push(
         <div 
-          key={day} 
-          onClick={() => handleDateClick(day)}
-          className="h-24 bg-white border border-gray-100 p-1 relative hover:bg-blue-50 cursor-pointer transition-colors group flex flex-col items-center justify-start rounded-lg"
+          key={`week-${row}`} 
+          onClick={() => handleWeekClick(weekNumStr)}
+          className={`h-32 flex flex-col items-center justify-center font-marker cursor-pointer transition-all group relative rounded-xl mx-1
+            ${theme.bg} ${theme.border} border-2
+            ${hasWeeklyLog ? 'shadow-md scale-105 z-10' : 'opacity-80 hover:opacity-100 hover:scale-105'}
+          `}
+          title="点击查看/编辑周报"
         >
-           <span className={`font-marker text-lg ${log ? 'text-blue-600 font-bold' : 'text-gray-400'}`}>{day}</span>
-           {log && (
-             <>
-               <span className="text-2xl mt-1 animate-in zoom-in spin-in-3 duration-300">{log.mood.emoji}</span>
-               <span className="text-[10px] text-gray-500 font-hand truncate w-full text-center px-1 mt-1">{log.content}</span>
-             </>
-           )}
-           {!log && (
-             <div className="opacity-0 group-hover:opacity-100 absolute inset-0 flex items-center justify-center">
-               <Plus className="w-6 h-6 text-blue-300" />
-             </div>
-           )}
+          <span className={`text-xs font-bold ${theme.text}`}>WEEK</span>
+          <span className={`text-2xl font-bold font-cute -mt-1 ${theme.text}`}>{shortWeekNum}</span>
+          
+          <div className="mt-1">
+             {hasWeeklyLog 
+                ? <Book className={`w-4 h-4 ${theme.icon}`} /> 
+                : <Plus className={`w-4 h-4 opacity-0 group-hover:opacity-100 ${theme.icon}`} />
+             }
+          </div>
         </div>
       );
+
+      // 2. Days Columns
+      for (let i = 0; i < 7; i++) {
+        // Empty cells before start of month
+        if (row === 0 && i < firstDay) {
+          cells.push(<div key={`empty-${i}`} className="h-32 bg-transparent"></div>);
+        } 
+        // Valid days
+        else if (currentDay <= daysInMonth) {
+          const d = currentDay;
+          // Local ISO string construction
+          const dateStr = getLocalISODate(new Date(year, month, d));
+          
+          const log = logs.find(l => l.date.startsWith(dateStr));
+          const marker = markers.find(m => m.date === dateStr);
+          const dayTodos = todos.filter(t => t.date === dateStr && !t.completed);
+          
+          const isToday = dateStr === todayStr;
+
+          // Get day style for border/color hints
+          const dayStyle = DAY_STYLES[i];
+
+          cells.push(
+            <div 
+              key={d} 
+              onClick={() => handleDateClick(d)}
+              className={`h-32 border-2 ${log ? 'border-dashed border-gray-300' : 'border-dashed border-gray-100'} 
+                 p-2 relative hover:bg-white hover:shadow-lg hover:-translate-y-1 hover:border-blue-200 
+                 cursor-pointer transition-all group flex flex-col items-center justify-start rounded-2xl overflow-hidden bg-white/60 backdrop-blur-sm
+                 ${isToday ? 'ring-4 ring-blue-100 border-blue-300 bg-blue-50/50' : ''}
+                 `}
+              style={marker ? { backgroundColor: marker.color + '15', borderColor: marker.color } : {}}
+            >
+               {/* Today Indicator */}
+               {isToday && (
+                 <span className="absolute top-2 right-2 flex h-2 w-2">
+                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
+                   <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-500"></span>
+                 </span>
+               )}
+
+               {/* Marker Tape (Top Center) if present, else empty */}
+               {marker && (
+                 <div 
+                    className="absolute -top-1.5 left-1/2 -translate-x-1/2 w-16 h-4 shadow-sm z-10 opacity-90 transform -rotate-1" 
+                    style={{ backgroundColor: marker.color, maskImage: 'radial-gradient(circle, black 2px, transparent 2.5px)', maskSize: '8px 8px' }} 
+                 ></div>
+               )}
+
+               {/* Date Number - Center Aligned & Big */}
+               <div className={`mt-2 font-cute text-3xl transition-transform duration-300 ${log ? dayStyle.text + ' font-bold scale-110' : (isToday ? 'text-blue-600 font-bold' : 'text-gray-400')}`}>
+                  {d}
+               </div>
+
+               {/* Marker Label */}
+               {marker && (
+                 <span 
+                   className="text-[10px] px-2 py-0.5 rounded-full text-white truncate max-w-full shadow-sm mt-0.5 leading-none"
+                   style={{ backgroundColor: marker.color }}
+                 >
+                   {marker.label}
+                 </span>
+               )}
+
+               {/* Log Content Preview */}
+               <div className="flex-grow flex flex-col items-center justify-center w-full mt-1">
+                  {log ? (
+                    <>
+                      <span className="text-2xl animate-in zoom-in spin-in-3 duration-500 filter drop-shadow-sm">{log.mood.emoji}</span>
+                      {log.content && <div className="h-1 w-8 bg-gray-200 rounded-full mt-1"></div>}
+                    </>
+                  ) : (
+                    !marker && <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+                       <Plus className="w-6 h-6 text-gray-200" />
+                    </div>
+                  )}
+               </div>
+
+               {/* Todo Indicators - Bottom Center */}
+               {dayTodos.length > 0 && (
+                 <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex items-center justify-center bg-yellow-50 px-1.5 py-0.5 rounded-full border border-yellow-100 gap-1 shadow-sm">
+                    {dayTodos.slice(0, 3).map((_, idx) => (
+                      <div key={idx} className="w-1.5 h-1.5 rounded-full bg-yellow-400"></div>
+                    ))}
+                    {dayTodos.length > 3 && <span className="text-[8px] text-gray-400 leading-none">+</span>}
+                 </div>
+               )}
+            </div>
+          );
+          currentDay++;
+        } 
+        // Empty cells after end of month
+        else {
+          cells.push(<div key={`empty-end-${row}-${i}`} className="h-32 bg-transparent"></div>);
+        }
+      }
     }
 
     return (
-      <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-200">
-         <div className="flex justify-between items-center mb-6">
-            <button onClick={() => changeMonth(-1)} className="p-2 hover:bg-gray-100 rounded-full"><ChevronLeft /></button>
-            <h2 className="text-2xl font-cute font-bold text-gray-700">
-              {calendarDate.toLocaleDateString('zh-CN', { year: 'numeric', month: 'long' })}
-            </h2>
-            <button onClick={() => changeMonth(1)} className="p-2 hover:bg-gray-100 rounded-full"><ChevronRight /></button>
+      <div className="bg-white/80 p-6 rounded-[2rem] shadow-xl border-4 border-white/50 relative overflow-hidden">
+         {/* Background Texture */}
+         <div className="absolute inset-0 bg-dot-paper opacity-30 pointer-events-none"></div>
+
+         <div className="flex justify-between items-center mb-8 relative z-10">
+            <button onClick={() => changeMonth(-1)} className="p-3 hover:bg-white rounded-full shadow-sm text-gray-500 hover:text-blue-500 transition-all"><ChevronLeft /></button>
+            
+            <div className="flex flex-col items-center">
+                <h2 className="text-4xl font-cute font-bold text-gray-700 tracking-wide flex items-center gap-2">
+                  <span className="text-blue-400">{calendarDate.toLocaleDateString('en-US', { month: 'long' })}</span>
+                  <span className="text-gray-300">/</span>
+                  <span className="text-gray-600">{calendarDate.getFullYear()}</span>
+                </h2>
+                
+                {/* Back to Today Button */}
+                <button 
+                  onClick={jumpToToday}
+                  className="mt-2 text-xs text-blue-400 hover:text-blue-600 font-marker hover:bg-blue-50 px-3 py-1 rounded-full transition-colors flex items-center gap-1"
+                >
+                  回到今天
+                </button>
+            </div>
+
+            <button onClick={() => changeMonth(1)} className="p-3 hover:bg-white rounded-full shadow-sm text-gray-500 hover:text-blue-500 transition-all"><ChevronRight /></button>
          </div>
-         <div className="grid grid-cols-7 gap-2 mb-2">
-            {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(d => (
-              <div key={d} className="text-center font-marker text-gray-400 font-bold uppercase text-sm">{d}</div>
-            ))}
-         </div>
-         <div className="grid grid-cols-7 gap-2">
-            {days}
+         
+         {/* Calendar Grid with 8 columns (1 for week num + 7 for days) */}
+         <div className="grid grid-cols-[60px_repeat(7,_1fr)] gap-3 relative z-10">
+            {cells}
          </div>
       </div>
     );
@@ -290,7 +534,21 @@ export const Dashboard: React.FC<DashboardProps> = ({
           dateStr={modalDate}
           existingLog={modalLog}
           onSave={handleModalSave}
+          onSaveMarker={handleMarkerSave}
           onClose={() => { setModalDate(null); setModalLog(undefined); }}
+          availableLogs={logs}
+          availableWeeklyLogs={weeklyLogs}
+          marker={markers.find(m => m.date === modalDate)}
+        />
+      )}
+
+      {/* --- Floating Weekly Log Modal --- */}
+      {modalWeekNumber && (
+        <WeeklyLogModal
+          weekNumber={modalWeekNumber}
+          existingLog={modalWeeklyLog}
+          onSave={handleWeeklyModalSave}
+          onClose={() => { setModalWeekNumber(null); setModalWeeklyLog(undefined); }}
           availableLogs={logs}
           availableWeeklyLogs={weeklyLogs}
         />
@@ -340,18 +598,28 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
       {/* Header */}
       <div className="flex flex-col md:flex-row justify-between items-center mb-8 mt-6">
-        <div className="relative mb-6 md:mb-0 text-center md:text-left">
-           <div className="absolute -top-6 -left-6 animate-wiggle">
-              <Sticker type="bow" size={36} color="#fca5a5" rotation={-15} />
+        <div className="relative mb-6 md:mb-0 text-center md:text-left flex items-center gap-6">
+           <div className="relative">
+             <div className="absolute -top-6 -left-6 animate-wiggle">
+                <Sticker type="bow" size={36} color="#fca5a5" rotation={-15} />
+             </div>
+             
+             <h1 className="text-5xl font-cute font-bold text-gray-800 relative z-10 transform -rotate-1 drop-shadow-sm">
+              Daily Craft
+             </h1>
+             <div className="absolute -bottom-2 left-0 w-full h-3 bg-yellow-200 -rotate-1 z-0 rounded-full opacity-60"></div>
            </div>
-           
-           <h1 className="text-5xl font-cute font-bold text-gray-800 relative z-10 transform -rotate-1 drop-shadow-sm">
-            Daily Craft
-           </h1>
-           <div className="absolute -bottom-2 left-0 w-full h-3 bg-yellow-200 -rotate-1 z-0 rounded-full opacity-60"></div>
-           <p className="font-marker text-gray-600 mt-2 ml-2 tracking-widest flex items-center gap-2">
-             记录每一刻的小确幸 <Sticker type="heart" size={12} color="#f472b6" />
-           </p>
+
+            {/* Realtime Clock Display */}
+            <div className="hidden sm:flex flex-col items-start border-l-2 border-dashed border-gray-200 pl-4 text-gray-500 font-marker">
+              <div className="flex items-center gap-1.5 text-xl font-bold text-gray-700">
+                <Clock className="w-4 h-4 text-blue-400" />
+                {currentTime.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })}
+              </div>
+              <div className="text-xs">
+                {currentTime.toLocaleDateString('zh-CN', { month: 'long', day: 'numeric', weekday: 'long' })}
+              </div>
+            </div>
         </div>
 
         <div className="flex flex-col items-end gap-3 w-full md:w-auto">
@@ -369,6 +637,13 @@ export const Dashboard: React.FC<DashboardProps> = ({
             
             <div className="flex bg-white rounded-full border border-gray-200 p-0.5 shadow-sm">
                <button 
+                onClick={() => setViewMode('calendar')}
+                className={`p-2 rounded-full transition-all ${viewMode === 'calendar' ? 'bg-blue-100 text-blue-600 shadow-inner' : 'text-gray-400 hover:bg-gray-50'}`}
+                title="日历视图"
+               >
+                 <Calendar className="w-4 h-4" />
+               </button>
+               <button 
                 onClick={() => setViewMode('list')}
                 className={`p-2 rounded-full transition-all ${viewMode === 'list' ? 'bg-blue-100 text-blue-600 shadow-inner' : 'text-gray-400 hover:bg-gray-50'}`}
                 title="列表视图"
@@ -381,13 +656,6 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 title="网格视图"
                >
                  <LayoutGrid className="w-4 h-4" />
-               </button>
-               <button 
-                onClick={() => setViewMode('calendar')}
-                className={`p-2 rounded-full transition-all ${viewMode === 'calendar' ? 'bg-blue-100 text-blue-600 shadow-inner' : 'text-gray-400 hover:bg-gray-50'}`}
-                title="日历视图"
-               >
-                 <Calendar className="w-4 h-4" />
                </button>
             </div>
 

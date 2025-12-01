@@ -1,22 +1,20 @@
 
-import { LogEntry, WeeklyLogEntry, TodoItem } from '../types';
+import { LogEntry, WeeklyLogEntry, TodoItem, CalendarMarker } from '../types';
 
 const DAILY_STORAGE_KEY = 'daily_craft_logs_v1';
 const WEEKLY_STORAGE_KEY = 'daily_craft_weekly_logs_v1';
 const TODO_STORAGE_KEY = 'daily_craft_todos_v1';
+const MARKER_STORAGE_KEY = 'daily_craft_markers_v1';
 
 // --- ID Generator Polyfill ---
 export const generateUUID = (): string => {
-  // Try to use crypto.randomUUID if available (Secure Context)
   if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
     try {
       return crypto.randomUUID();
     } catch (e) {
-      // Fallback if it fails
+      // Fallback
     }
   }
-  
-  // Fallback for non-secure contexts (http) or older browsers
   return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
     var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
     return v.toString(16);
@@ -24,13 +22,25 @@ export const generateUUID = (): string => {
 };
 
 // --- Helper for Dates ---
-const getWeekNumberFromDate = (dateObj: Date): string => {
+export const getWeekNumberFromDate = (dateObj: Date): string => {
   const date = new Date(dateObj.getTime());
   date.setHours(0, 0, 0, 0);
   date.setDate(date.getDate() + 3 - (date.getDay() + 6) % 7);
   const week1 = new Date(date.getFullYear(), 0, 4);
   const weekNumber = 1 + Math.round(((date.getTime() - week1.getTime()) / 86400000 - 3 + (week1.getDay() + 6) % 7) / 7);
   return `${date.getFullYear()}-W${weekNumber.toString().padStart(2, '0')}`;
+};
+
+export const getStartDateFromWeek = (w: string): string => {
+  const [y, wk] = w.split('-W');
+  const simpleDate = new Date(parseInt(y), 0, 1 + (parseInt(wk) - 1) * 7);
+  const dayOfWeek = simpleDate.getDay();
+  const ISOweekStart = simpleDate;
+  if (dayOfWeek <= 4)
+      ISOweekStart.setDate(simpleDate.getDate() - simpleDate.getDay() + 1);
+  else 
+      ISOweekStart.setDate(simpleDate.getDate() + 8 - simpleDate.getDay());
+  return ISOweekStart.toISOString();
 };
 
 // --- Daily Logs ---
@@ -78,7 +88,7 @@ export const createEmptyLog = (dateStr?: string): LogEntry => ({
   },
   tags: [],
   stickers: [],
-  highlights: [] // Initialize highlights
+  highlights: [] 
 });
 
 // --- Weekly Logs ---
@@ -133,6 +143,35 @@ export const createEmptyWeeklyLog = (dateStr?: string): WeeklyLogEntry => {
     themeColor: '#d1fae5' // Default green for weeks
   };
 };
+
+// --- Calendar Markers ---
+
+export const getMarkers = (): CalendarMarker[] => {
+  try {
+    const data = localStorage.getItem(MARKER_STORAGE_KEY);
+    return data ? JSON.parse(data) : [];
+  } catch (e) {
+    return [];
+  }
+};
+
+export const saveMarker = (marker: CalendarMarker): void => {
+  const markers = getMarkers();
+  const index = markers.findIndex(m => m.date === marker.date);
+  
+  if (index >= 0) {
+    markers[index] = marker;
+  } else {
+    markers.push(marker);
+  }
+  localStorage.setItem(MARKER_STORAGE_KEY, JSON.stringify(markers));
+};
+
+export const deleteMarker = (dateStr: string): void => {
+  const markers = getMarkers().filter(m => m.date !== dateStr);
+  localStorage.setItem(MARKER_STORAGE_KEY, JSON.stringify(markers));
+};
+
 
 // --- Sync Logic ---
 

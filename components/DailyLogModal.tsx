@@ -1,19 +1,21 @@
 
 import React, { useState, useEffect } from 'react';
-import { LogEntry, MoodAnalysis, WeeklyLogEntry } from '../types';
+import { LogEntry, MoodAnalysis, WeeklyLogEntry, CalendarMarker } from '../types';
 import { RichTextEditor } from './RichTextEditor';
 import { WashiTape } from './WashiTape';
 import { Sticker } from './Sticker';
-import { Save, X, Wand2, Calendar, Sparkles } from 'lucide-react';
+import { Save, X, Wand2, Calendar, Sparkles, Highlighter } from 'lucide-react';
 import { createEmptyLog, syncDailyHighlightsToWeekly } from '../services/storage';
 
 interface DailyLogModalProps {
   dateStr: string;
   existingLog?: LogEntry;
   onSave: (log: LogEntry) => void;
+  onSaveMarker?: (marker: CalendarMarker | null) => void;
   onClose: () => void;
   availableLogs: LogEntry[];
   availableWeeklyLogs: WeeklyLogEntry[];
+  marker?: CalendarMarker; // Current marker for this day if any
 }
 
 const MOOD_PRESETS: MoodAnalysis[] = [
@@ -31,9 +33,11 @@ export const DailyLogModal: React.FC<DailyLogModalProps> = ({
   dateStr,
   existingLog,
   onSave,
+  onSaveMarker,
   onClose,
   availableLogs,
-  availableWeeklyLogs
+  availableWeeklyLogs,
+  marker
 }) => {
   // Initialize state with existing log or create a fresh draft
   const [entry, setEntry] = useState<LogEntry>(() => {
@@ -42,10 +46,16 @@ export const DailyLogModal: React.FC<DailyLogModalProps> = ({
     return newLog;
   });
 
+  const [displayDate, setDisplayDate] = useState(dateStr);
   const [content, setContent] = useState(entry.content);
   const [mood, setMood] = useState(entry.mood);
   const [highlights, setHighlights] = useState<string[]>(entry.highlights || []);
   const [newHighlight, setNewHighlight] = useState('');
+
+  // Marker State
+  const [markerColor, setMarkerColor] = useState(marker?.color || '#ffd1dc');
+  const [markerLabel, setMarkerLabel] = useState(marker?.label || '');
+  const [showMarkerSettings, setShowMarkerSettings] = useState(!!marker);
 
   const handleCycleMood = () => {
     const currentIndex = MOOD_PRESETS.findIndex(m => m.emoji === mood.emoji);
@@ -54,15 +64,39 @@ export const DailyLogModal: React.FC<DailyLogModalProps> = ({
   };
 
   const handleSave = () => {
+    // Construct new ISO date based on user selection, keeping standard time if possible
+    // Use simple ISO construction to avoid TZ shifts: YYYY-MM-DDT00:00:00.000Z
     const updatedEntry: LogEntry = {
       ...entry,
+      date: new Date(displayDate).toISOString(),
       content,
       mood,
       highlights,
     };
-    // Sync highlights if any
-    syncDailyHighlightsToWeekly(updatedEntry, highlights);
-    onSave(updatedEntry);
+    
+    // Save Log
+    if (content.trim() || highlights.length > 0) {
+        // Sync highlights if any
+        syncDailyHighlightsToWeekly(updatedEntry, highlights);
+        onSave(updatedEntry);
+    }
+
+    // Save Marker - associate with the DISPLAY date
+    if (onSaveMarker) {
+        if (markerLabel.trim()) {
+            onSaveMarker({
+                date: displayDate,
+                color: markerColor,
+                label: markerLabel.trim()
+            });
+        } else {
+            // If label is cleared, remove marker
+            onSaveMarker(null);
+        }
+    } else {
+        // fallback if onSaveMarker not provided but onSave expects closing
+        if (!content.trim() && !highlights.length) onSave(updatedEntry);
+    }
   };
 
   const handleAddHighlight = () => {
@@ -91,10 +125,24 @@ export const DailyLogModal: React.FC<DailyLogModalProps> = ({
                <Calendar className="w-6 h-6" />
             </div>
             <div>
-              <h2 className="text-2xl font-cute font-bold text-gray-800 flex items-center gap-2">
-                {new Date(dateStr).toLocaleDateString('zh-CN', { month: 'long', day: 'numeric', weekday: 'long' })}
-              </h2>
-              <p className="text-xs text-blue-400 font-bold tracking-wider uppercase">Daily Log Preview</p>
+              {/* Editable Date Input */}
+              <div className="flex items-center gap-2">
+                 <input 
+                   type="date"
+                   value={displayDate}
+                   onChange={(e) => setDisplayDate(e.target.value)}
+                   className="text-2xl font-cute font-bold text-gray-800 bg-transparent outline-none border-b border-dashed border-blue-200 focus:border-blue-400 transition-colors w-48"
+                 />
+              </div>
+              <div className="flex items-center gap-2 mt-1">
+                 <button 
+                   onClick={() => setShowMarkerSettings(!showMarkerSettings)}
+                   className={`text-xs px-2 py-0.5 rounded-full border flex items-center gap-1 transition-colors ${showMarkerSettings ? 'bg-yellow-100 text-yellow-700 border-yellow-200' : 'bg-white text-gray-400 border-gray-200 hover:text-blue-500'}`}
+                 >
+                    <Highlighter className="w-3 h-3" />
+                    {showMarkerSettings ? '收起标记' : '日历标记'}
+                 </button>
+              </div>
             </div>
           </div>
 
@@ -128,6 +176,34 @@ export const DailyLogModal: React.FC<DailyLogModalProps> = ({
         {/* Scrollable Content */}
         <div className="flex-grow overflow-y-auto p-6 sm:p-8 custom-scrollbar bg-grid-paper bg-[length:24px_24px]">
            
+           {/* Calendar Marker Settings */}
+           {showMarkerSettings && (
+             <div className="mb-6 bg-yellow-50/50 p-3 rounded-xl border border-yellow-100 animate-in slide-in-from-top-2">
+                <div className="flex items-center gap-3">
+                   <span className="text-xs font-bold text-gray-500">日历标记:</span>
+                   <input 
+                      type="color" 
+                      value={markerColor}
+                      onChange={(e) => setMarkerColor(e.target.value)}
+                      className="w-6 h-6 rounded-full cursor-pointer border-none bg-transparent"
+                      title="选择高亮颜色"
+                   />
+                   <input 
+                      type="text"
+                      value={markerLabel}
+                      onChange={(e) => setMarkerLabel(e.target.value)}
+                      placeholder="例如: 发薪日, 纪念日..."
+                      className="bg-white border border-yellow-200 rounded px-2 py-1 text-sm font-hand text-gray-700 focus:border-yellow-400 outline-none flex-grow"
+                   />
+                   {markerLabel && (
+                       <button onClick={() => setMarkerLabel('')} className="text-gray-400 hover:text-red-400">
+                           <X className="w-4 h-4" />
+                       </button>
+                   )}
+                </div>
+             </div>
+           )}
+
            {/* Highlights Section */}
            <div className="mb-6 bg-white/60 p-4 rounded-xl border border-blue-100 shadow-sm">
               <h3 className="flex items-center gap-2 font-marker text-blue-800 mb-2 text-sm">
