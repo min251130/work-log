@@ -58,8 +58,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
   onExportAllWeekly,
   onQuickSaveDaily
 }) => {
-  // Default to Calendar view as requested
-  const [viewMode, setViewMode] = useState<'grid' | 'list' | 'calendar'>('calendar');
+  // Default to List view
+  const [viewMode, setViewMode] = useState<'grid' | 'list' | 'calendar'>('list');
   const [searchTerm, setSearchTerm] = useState('');
   
   // Drag and Drop Refs
@@ -81,6 +81,9 @@ export const Dashboard: React.FC<DashboardProps> = ({
   // Weekly Modal State
   const [modalWeekNumber, setModalWeekNumber] = useState<string | null>(null);
   const [modalWeeklyLog, setModalWeeklyLog] = useState<WeeklyLogEntry | undefined>(undefined);
+
+  // Hover Preview State
+  const [preview, setPreview] = useState<{ x: number, y: number, title: string, content: string, mood?: string, highlights?: string[] } | null>(null);
 
   // Markers & Todos State
   const [markers, setMarkers] = useState<CalendarMarker[]>([]);
@@ -257,7 +260,6 @@ export const Dashboard: React.FC<DashboardProps> = ({
   };
 
   const handleDateClick = (day: number) => {
-    // Construct local date string correctly
     const year = calendarDate.getFullYear();
     const month = calendarDate.getMonth();
     const dateObj = new Date(year, month, day);
@@ -300,6 +302,41 @@ export const Dashboard: React.FC<DashboardProps> = ({
     }
   };
 
+  // --- Hover Preview Logic ---
+  const handleCellMouseEnter = (e: React.MouseEvent, type: 'daily' | 'weekly', data: LogEntry | WeeklyLogEntry) => {
+     if (!data) return;
+
+     const rect = e.currentTarget.getBoundingClientRect();
+     // Calculate position to prevent overflow
+     const x = Math.min(rect.left, window.innerWidth - 300); // 300 is approx width of tooltip
+     const y = rect.bottom + 10;
+     
+     if (type === 'daily') {
+        const log = data as LogEntry;
+        setPreview({
+          x, y,
+          title: formatDate(log.date),
+          content: log.content,
+          mood: log.mood.emoji,
+          highlights: log.highlights
+        });
+     } else {
+        const log = data as WeeklyLogEntry;
+        setPreview({
+          x, y,
+          title: `周报 ${log.weekNumber}`,
+          content: log.content,
+          mood: log.moodSummary,
+          highlights: log.highlights
+        });
+     }
+  };
+
+  const handleCellMouseLeave = () => {
+    setPreview(null);
+  };
+
+
   // --- Dice Logic ---
   const handleRollDice = () => {
     const allHighlights: { text: string; date: string; mood: string }[] = [];
@@ -336,25 +373,20 @@ export const Dashboard: React.FC<DashboardProps> = ({
     const todayStr = getLocalISODate(new Date());
 
     // Week Number Logic
-    // Start from the first week of the month view (which might start in previous month)
     const startDate = new Date(year, month, 1);
     startDate.setDate(startDate.getDate() - startDate.getDay()); // Go to Sunday
 
-    // Headers - Row 1 (Day Names)
-    // Corner Cell
+    // Headers
     cells.push(
       <div key="h-corner" className="flex items-end justify-center pb-1">
          <div className="bg-gray-800 text-white text-[8px] sm:text-[10px] font-bold px-1 sm:px-2 py-0.5 rounded-full font-marker whitespace-nowrap hidden md:block">WEEK</div>
          <div className="bg-gray-800 text-white text-[8px] font-bold px-1 rounded-sm font-marker md:hidden">W</div>
       </div>
     );
-    // Day Name Cells
     DAY_STYLES.forEach((style) => {
         cells.push(
             <div key={`h-${style.label}`} className={`text-center py-1 rounded-lg mb-1 flex items-center justify-center ${style.bg}`}>
-                {/* Full label on desktop */}
                 <div className={`hidden sm:block font-cute font-bold text-lg md:text-xl ${style.text}`}>{style.label}</div>
-                {/* Single letter on mobile */}
                 <div className={`sm:hidden font-cute font-bold text-xs ${style.text}`}>{style.mobileLabel}</div>
             </div>
         );
@@ -362,8 +394,6 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
     // Calendar Grid Construction
     let currentDay = 1;
-    
-    // Calculate total rows needed
     const totalSlots = firstDay + daysInMonth;
     const totalRows = Math.ceil(totalSlots / 7);
 
@@ -372,7 +402,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
       const weekDate = new Date(year, month, 1 + (row * 7) - firstDay + 1); 
       const weekNumStr = getWeekNumberFromDate(weekDate);
       const shortWeekNum = weekNumStr.split('-W')[1];
-      const hasWeeklyLog = weeklyLogs.some(w => w.weekNumber === weekNumStr);
+      const foundWeeklyLog = weeklyLogs.find(w => w.weekNumber === weekNumStr);
       
       const weekInt = parseInt(shortWeekNum, 10) || 0;
       const theme = WEEK_THEMES[weekInt % WEEK_THEMES.length];
@@ -381,17 +411,19 @@ export const Dashboard: React.FC<DashboardProps> = ({
         <div 
           key={`week-${row}`} 
           onClick={() => handleWeekClick(weekNumStr)}
+          onMouseEnter={(e) => foundWeeklyLog && handleCellMouseEnter(e, 'weekly', foundWeeklyLog)}
+          onMouseLeave={handleCellMouseLeave}
           className={`flex flex-col items-center justify-center font-marker cursor-pointer transition-all group relative rounded-lg sm:rounded-xl mx-0.5
             aspect-[2/3] sm:aspect-auto sm:h-auto sm:min-h-[5rem]
             ${theme.bg} ${theme.border} border sm:border-2
-            ${hasWeeklyLog ? 'shadow-md scale-105 z-10' : 'opacity-80 hover:opacity-100 hover:scale-105'}
+            ${foundWeeklyLog ? 'shadow-md scale-105 z-10' : 'opacity-80 hover:opacity-100 hover:scale-105'}
           `}
         >
           <span className={`text-[8px] sm:text-[10px] sm:text-xs font-bold ${theme.text} hidden md:block`}>WEEK</span>
           <span className={`text-[10px] sm:text-lg md:text-2xl font-bold font-cute ${theme.text}`}>{shortWeekNum}</span>
           
           <div className="mt-0.5 sm:mt-1">
-             {hasWeeklyLog 
+             {foundWeeklyLog 
                 ? <Book className={`w-2 h-2 sm:w-3 sm:h-3 md:w-4 md:h-4 ${theme.icon}`} /> 
                 : <Plus className={`w-2 h-2 sm:w-3 sm:h-3 md:w-4 md:h-4 opacity-0 group-hover:opacity-100 ${theme.icon}`} />
              }
@@ -401,11 +433,9 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
       // 2. Days Columns
       for (let i = 0; i < 7; i++) {
-        // Empty cells before start of month
         if (row === 0 && i < firstDay) {
           cells.push(<div key={`empty-${i}`} className="bg-transparent"></div>);
         } 
-        // Valid days
         else if (currentDay <= daysInMonth) {
           const d = currentDay;
           const dateStr = getLocalISODate(new Date(year, month, d));
@@ -419,6 +449,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
             <div 
               key={d} 
               onClick={() => handleDateClick(d)}
+              onMouseEnter={(e) => log && handleCellMouseEnter(e, 'daily', log)}
+              onMouseLeave={handleCellMouseLeave}
               className={`
                  min-h-[3.5rem] sm:min-h-[5rem] md:min-h-[7rem]
                  border sm:border-2 ${log ? 'border-dashed border-gray-300' : 'border-dashed border-gray-100'} 
@@ -444,12 +476,12 @@ export const Dashboard: React.FC<DashboardProps> = ({
                  ></div>
                )}
 
-               {/* Date Number - Responsive sizing */}
+               {/* Date Number */}
                <div className={`mt-0.5 sm:mt-2 font-cute text-sm sm:text-xl md:text-3xl transition-transform duration-300 ${log ? dayStyle.text + ' font-bold scale-110' : (isToday ? 'text-blue-600 font-bold' : 'text-gray-400')}`}>
                   {d}
                </div>
 
-               {/* Marker Label (Hidden on small screens, shown on sm+) */}
+               {/* Marker Label */}
                {marker && (
                  <span 
                    className="hidden sm:inline-block text-[8px] sm:text-[10px] px-1.5 py-0.5 rounded-full text-white truncate max-w-full shadow-sm mt-0.5 leading-none"
@@ -459,7 +491,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                  </span>
                )}
 
-               {/* Log Content Preview */}
+               {/* Log Content Preview Icon */}
                <div className="flex-grow flex flex-col items-center justify-center w-full mt-0 sm:mt-1">
                   {log ? (
                     <>
@@ -486,7 +518,6 @@ export const Dashboard: React.FC<DashboardProps> = ({
           );
           currentDay++;
         } 
-        // Empty cells after end of month
         else {
           cells.push(<div key={`empty-end-${row}-${i}`} className="bg-transparent"></div>);
         }
@@ -495,14 +526,12 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
     return (
       <div className="bg-white/80 p-2 sm:p-6 rounded-xl sm:rounded-[2rem] shadow-xl border-2 sm:border-4 border-white/50 relative overflow-hidden w-full">
-         {/* Background Texture */}
          <div className="absolute inset-0 bg-dot-paper opacity-30 pointer-events-none"></div>
 
          <div className="flex justify-between items-center mb-4 sm:mb-8 relative z-10">
             <button onClick={() => changeMonth(-1)} className="p-1 sm:p-3 hover:bg-white rounded-full shadow-sm text-gray-500 hover:text-blue-500 transition-all"><ChevronLeft className="w-5 h-5 sm:w-6 sm:h-6" /></button>
             
             <div className="flex flex-col items-center">
-                {/* Interactive Month Picker */}
                 <div className="relative group">
                    <h2 className="text-lg sm:text-2xl md:text-4xl font-cute font-bold text-gray-700 tracking-wide flex items-center gap-2 cursor-pointer group-hover:text-blue-500 transition-colors">
                      <span className="text-blue-400 group-hover:text-blue-600 transition-colors whitespace-nowrap">{calendarDate.toLocaleDateString('en-US', { month: 'short' })}</span>
@@ -533,9 +562,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
             <button onClick={() => changeMonth(1)} className="p-1 sm:p-3 hover:bg-white rounded-full shadow-sm text-gray-500 hover:text-blue-500 transition-all"><ChevronRight className="w-5 h-5 sm:w-6 sm:h-6" /></button>
          </div>
          
-         {/* Responsive Grid Container */}
          <div className="relative z-10 w-full">
-             {/* Use responsive grid-cols to maximize space */}
              <div className="grid grid-cols-[25px_repeat(7,_1fr)] sm:grid-cols-[40px_repeat(7,_1fr)] md:grid-cols-[60px_repeat(7,_1fr)] gap-0.5 sm:gap-1 md:gap-3 min-w-0 w-full">
                 {cells}
              </div>
@@ -629,6 +656,40 @@ export const Dashboard: React.FC<DashboardProps> = ({
                  📅 {formatDate(surpriseItem.date)}
               </div>
            </div>
+        </div>
+      )}
+
+      {/* Hover Preview Tooltip */}
+      {preview && (
+        <div 
+           className="fixed z-[9999] bg-white p-4 rounded-xl shadow-2xl border-2 border-blue-100 max-w-xs sm:max-w-sm pointer-events-none animate-in fade-in zoom-in-95 duration-200"
+           style={{ 
+             left: preview.x, 
+             top: preview.y,
+             // Ensure it doesn't go offscreen
+             transform: `translateX(${preview.x + 320 > window.innerWidth ? '-100%' : '0'})` 
+           }}
+        >
+           <div className="absolute -top-2 left-4 w-4 h-4 bg-white border-t-2 border-l-2 border-blue-100 transform rotate-45"></div>
+           <div className="flex items-center gap-2 mb-2 border-b border-gray-100 pb-2">
+             {preview.mood && <span className="text-xl">{preview.mood}</span>}
+             <h3 className="font-cute font-bold text-gray-700 text-lg">{preview.title}</h3>
+           </div>
+           
+           <div className="text-sm font-hand text-gray-600 line-clamp-4 leading-relaxed mb-2">
+             {preview.content || <span className="italic text-gray-300">无文字内容</span>}
+           </div>
+
+           {preview.highlights && preview.highlights.length > 0 && (
+             <div className="space-y-1">
+               {preview.highlights.slice(0, 2).map((h, i) => (
+                 <div key={i} className="text-xs bg-yellow-50 text-yellow-700 px-2 py-1 rounded border border-yellow-100 truncate">
+                   ✨ {h}
+                 </div>
+               ))}
+               {preview.highlights.length > 2 && <div className="text-xs text-gray-400 pl-1">...等 {preview.highlights.length} 条</div>}
+             </div>
+           )}
         </div>
       )}
 
