@@ -36,13 +36,13 @@ const WEEK_THEMES = [
 
 // Define Day Headers (Columns)
 const DAY_STYLES = [
-  { label: 'SUN', full: 'Sunday', bg: 'bg-rose-50', text: 'text-rose-500' },
-  { label: 'MON', full: 'Monday', bg: 'bg-orange-50', text: 'text-orange-500' },
-  { label: 'TUE', full: 'Tuesday', bg: 'bg-amber-50', text: 'text-amber-500' },
-  { label: 'WED', full: 'Wednesday', bg: 'bg-emerald-50', text: 'text-emerald-500' },
-  { label: 'THU', full: 'Thursday', bg: 'bg-cyan-50', text: 'text-cyan-500' },
-  { label: 'FRI', full: 'Friday', bg: 'bg-blue-50', text: 'text-blue-500' },
-  { label: 'SAT', full: 'Saturday', bg: 'bg-violet-50', text: 'text-violet-500' },
+  { label: 'SUN', mobileLabel: 'S', full: 'Sunday', bg: 'bg-rose-50', text: 'text-rose-500' },
+  { label: 'MON', mobileLabel: 'M', full: 'Monday', bg: 'bg-orange-50', text: 'text-orange-500' },
+  { label: 'TUE', mobileLabel: 'T', full: 'Tuesday', bg: 'bg-amber-50', text: 'text-amber-500' },
+  { label: 'WED', mobileLabel: 'W', full: 'Wednesday', bg: 'bg-emerald-50', text: 'text-emerald-500' },
+  { label: 'THU', mobileLabel: 'T', full: 'Thursday', bg: 'bg-cyan-50', text: 'text-cyan-500' },
+  { label: 'FRI', mobileLabel: 'F', full: 'Friday', bg: 'bg-blue-50', text: 'text-blue-500' },
+  { label: 'SAT', mobileLabel: 'S', full: 'Saturday', bg: 'bg-violet-50', text: 'text-violet-500' },
 ];
 
 export const Dashboard: React.FC<DashboardProps> = ({ 
@@ -343,15 +343,19 @@ export const Dashboard: React.FC<DashboardProps> = ({
     // Headers - Row 1 (Day Names)
     // Corner Cell
     cells.push(
-      <div key="h-corner" className="flex items-end justify-center pb-2">
-         <div className="bg-gray-800 text-white text-[10px] font-bold px-1 sm:px-2 py-0.5 rounded-full font-marker whitespace-nowrap">WEEK</div>
+      <div key="h-corner" className="flex items-end justify-center pb-1">
+         <div className="bg-gray-800 text-white text-[8px] sm:text-[10px] font-bold px-1 sm:px-2 py-0.5 rounded-full font-marker whitespace-nowrap hidden md:block">WEEK</div>
+         <div className="bg-gray-800 text-white text-[8px] font-bold px-1 rounded-sm font-marker md:hidden">W</div>
       </div>
     );
     // Day Name Cells
     DAY_STYLES.forEach((style) => {
         cells.push(
-            <div key={`h-${style.label}`} className={`text-center py-2 rounded-lg mb-2 ${style.bg}`}>
-                <div className={`font-cute font-bold text-lg sm:text-xl ${style.text}`}>{style.label}</div>
+            <div key={`h-${style.label}`} className={`text-center py-1 rounded-lg mb-1 flex items-center justify-center ${style.bg}`}>
+                {/* Full label on desktop */}
+                <div className={`hidden sm:block font-cute font-bold text-lg md:text-xl ${style.text}`}>{style.label}</div>
+                {/* Single letter on mobile */}
+                <div className={`sm:hidden font-cute font-bold text-xs ${style.text}`}>{style.mobileLabel}</div>
             </div>
         );
     });
@@ -366,15 +370,10 @@ export const Dashboard: React.FC<DashboardProps> = ({
     for (let row = 0; row < totalRows; row++) {
       // 1. Week Number Column (Row Header)
       const weekDate = new Date(year, month, 1 + (row * 7) - firstDay + 1); 
-      // Adjust if we are in the padding zone of previous month
-      if (row === 0 && firstDay > 1) {
-         // rough approx is fine for visual
-      }
       const weekNumStr = getWeekNumberFromDate(weekDate);
       const shortWeekNum = weekNumStr.split('-W')[1];
       const hasWeeklyLog = weeklyLogs.some(w => w.weekNumber === weekNumStr);
       
-      // Select Color Theme based on Week Number
       const weekInt = parseInt(shortWeekNum, 10) || 0;
       const theme = WEEK_THEMES[weekInt % WEEK_THEMES.length];
 
@@ -382,19 +381,19 @@ export const Dashboard: React.FC<DashboardProps> = ({
         <div 
           key={`week-${row}`} 
           onClick={() => handleWeekClick(weekNumStr)}
-          className={`h-24 md:h-32 flex flex-col items-center justify-center font-marker cursor-pointer transition-all group relative rounded-xl mx-1
-            ${theme.bg} ${theme.border} border-2
+          className={`flex flex-col items-center justify-center font-marker cursor-pointer transition-all group relative rounded-lg sm:rounded-xl mx-0.5
+            aspect-[2/3] sm:aspect-auto sm:h-auto sm:min-h-[5rem]
+            ${theme.bg} ${theme.border} border sm:border-2
             ${hasWeeklyLog ? 'shadow-md scale-105 z-10' : 'opacity-80 hover:opacity-100 hover:scale-105'}
           `}
-          title="点击查看/编辑周报"
         >
-          <span className={`text-[10px] sm:text-xs font-bold ${theme.text} hidden sm:block`}>WEEK</span>
-          <span className={`text-lg sm:text-2xl font-bold font-cute sm:-mt-1 ${theme.text}`}>{shortWeekNum}</span>
+          <span className={`text-[8px] sm:text-[10px] sm:text-xs font-bold ${theme.text} hidden md:block`}>WEEK</span>
+          <span className={`text-[10px] sm:text-lg md:text-2xl font-bold font-cute ${theme.text}`}>{shortWeekNum}</span>
           
-          <div className="mt-1">
+          <div className="mt-0.5 sm:mt-1">
              {hasWeeklyLog 
-                ? <Book className={`w-3 h-3 sm:w-4 sm:h-4 ${theme.icon}`} /> 
-                : <Plus className={`w-3 h-3 sm:w-4 sm:h-4 opacity-0 group-hover:opacity-100 ${theme.icon}`} />
+                ? <Book className={`w-2 h-2 sm:w-3 sm:h-3 md:w-4 md:h-4 ${theme.icon}`} /> 
+                : <Plus className={`w-2 h-2 sm:w-3 sm:h-3 md:w-4 md:h-4 opacity-0 group-hover:opacity-100 ${theme.icon}`} />
              }
           </div>
         </div>
@@ -404,59 +403,56 @@ export const Dashboard: React.FC<DashboardProps> = ({
       for (let i = 0; i < 7; i++) {
         // Empty cells before start of month
         if (row === 0 && i < firstDay) {
-          cells.push(<div key={`empty-${i}`} className="h-24 md:h-32 bg-transparent"></div>);
+          cells.push(<div key={`empty-${i}`} className="bg-transparent"></div>);
         } 
         // Valid days
         else if (currentDay <= daysInMonth) {
           const d = currentDay;
-          // Local ISO string construction
           const dateStr = getLocalISODate(new Date(year, month, d));
-          
           const log = logs.find(l => l.date.startsWith(dateStr));
           const marker = markers.find(m => m.date === dateStr);
           const dayTodos = todos.filter(t => t.date === dateStr && !t.completed);
-          
           const isToday = dateStr === todayStr;
-
-          // Get day style for border/color hints
           const dayStyle = DAY_STYLES[i];
 
           cells.push(
             <div 
               key={d} 
               onClick={() => handleDateClick(d)}
-              className={`h-24 md:h-32 border-2 ${log ? 'border-dashed border-gray-300' : 'border-dashed border-gray-100'} 
-                 p-1 sm:p-2 relative hover:bg-white hover:shadow-lg hover:-translate-y-1 hover:border-blue-200 
-                 cursor-pointer transition-all group flex flex-col items-center justify-start rounded-2xl overflow-hidden bg-white/60 backdrop-blur-sm
-                 ${isToday ? 'ring-2 sm:ring-4 ring-blue-100 border-blue-300 bg-blue-50/50' : ''}
+              className={`
+                 min-h-[3.5rem] sm:min-h-[5rem] md:min-h-[7rem]
+                 border sm:border-2 ${log ? 'border-dashed border-gray-300' : 'border-dashed border-gray-100'} 
+                 p-0.5 sm:p-2 relative hover:bg-white hover:shadow-lg hover:-translate-y-1 hover:border-blue-200 
+                 cursor-pointer transition-all group flex flex-col items-center justify-start rounded-md sm:rounded-2xl overflow-hidden bg-white/60 backdrop-blur-sm
+                 ${isToday ? 'ring-1 sm:ring-4 ring-blue-100 border-blue-300 bg-blue-50/50' : ''}
                  `}
               style={marker ? { backgroundColor: marker.color + '15', borderColor: marker.color } : {}}
             >
                {/* Today Indicator */}
                {isToday && (
-                 <span className="absolute top-2 right-2 flex h-2 w-2">
+                 <span className="absolute top-1 right-1 sm:top-2 sm:right-2 flex h-1.5 w-1.5 sm:h-2 sm:w-2">
                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
-                   <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-500"></span>
+                   <span className="relative inline-flex rounded-full h-1.5 w-1.5 sm:h-2 sm:w-2 bg-blue-500"></span>
                  </span>
                )}
 
-               {/* Marker Tape (Top Center) if present, else empty */}
+               {/* Marker Tape */}
                {marker && (
                  <div 
-                    className="absolute -top-1.5 left-1/2 -translate-x-1/2 w-12 sm:w-16 h-4 shadow-sm z-10 opacity-90 transform -rotate-1" 
-                    style={{ backgroundColor: marker.color, maskImage: 'radial-gradient(circle, black 2px, transparent 2.5px)', maskSize: '8px 8px' }} 
+                    className="absolute -top-1 left-1/2 -translate-x-1/2 w-8 sm:w-16 h-2 sm:h-4 shadow-sm z-10 opacity-90 transform -rotate-1" 
+                    style={{ backgroundColor: marker.color }} 
                  ></div>
                )}
 
-               {/* Date Number - Center Aligned & Big */}
-               <div className={`mt-2 font-cute text-2xl sm:text-3xl transition-transform duration-300 ${log ? dayStyle.text + ' font-bold scale-110' : (isToday ? 'text-blue-600 font-bold' : 'text-gray-400')}`}>
+               {/* Date Number - Responsive sizing */}
+               <div className={`mt-0.5 sm:mt-2 font-cute text-sm sm:text-xl md:text-3xl transition-transform duration-300 ${log ? dayStyle.text + ' font-bold scale-110' : (isToday ? 'text-blue-600 font-bold' : 'text-gray-400')}`}>
                   {d}
                </div>
 
-               {/* Marker Label */}
+               {/* Marker Label (Hidden on small screens, shown on sm+) */}
                {marker && (
                  <span 
-                   className="text-[8px] sm:text-[10px] px-1.5 py-0.5 rounded-full text-white truncate max-w-full shadow-sm mt-0.5 leading-none"
+                   className="hidden sm:inline-block text-[8px] sm:text-[10px] px-1.5 py-0.5 rounded-full text-white truncate max-w-full shadow-sm mt-0.5 leading-none"
                    style={{ backgroundColor: marker.color }}
                  >
                    {marker.label}
@@ -464,26 +460,26 @@ export const Dashboard: React.FC<DashboardProps> = ({
                )}
 
                {/* Log Content Preview */}
-               <div className="flex-grow flex flex-col items-center justify-center w-full mt-1">
+               <div className="flex-grow flex flex-col items-center justify-center w-full mt-0 sm:mt-1">
                   {log ? (
                     <>
-                      <span className="text-lg sm:text-2xl animate-in zoom-in spin-in-3 duration-500 filter drop-shadow-sm">{log.mood.emoji}</span>
-                      {log.content && <div className="h-1 w-6 sm:w-8 bg-gray-200 rounded-full mt-1 hidden sm:block"></div>}
+                      <span className="text-sm sm:text-lg md:text-2xl animate-in zoom-in spin-in-3 duration-500 filter drop-shadow-sm">{log.mood.emoji}</span>
+                      {log.content && <div className="h-0.5 w-4 sm:h-1 sm:w-8 bg-gray-200 rounded-full mt-1 hidden sm:block"></div>}
                     </>
                   ) : (
                     !marker && <div className="opacity-0 group-hover:opacity-100 transition-opacity">
-                       <Plus className="w-5 h-5 sm:w-6 sm:h-6 text-gray-200" />
+                       <Plus className="w-3 h-3 sm:w-5 sm:h-5 sm:w-6 sm:h-6 text-gray-200" />
                     </div>
                   )}
                </div>
 
-               {/* Todo Indicators - Bottom Center */}
+               {/* Todo Indicators */}
                {dayTodos.length > 0 && (
-                 <div className="absolute bottom-1 sm:bottom-2 left-1/2 -translate-x-1/2 flex items-center justify-center bg-yellow-50 px-1.5 py-0.5 rounded-full border border-yellow-100 gap-1 shadow-sm">
+                 <div className="absolute bottom-1 left-1/2 -translate-x-1/2 flex items-center justify-center gap-0.5 sm:gap-1">
                     {dayTodos.slice(0, 3).map((_, idx) => (
-                      <div key={idx} className="w-1 h-1 sm:w-1.5 sm:h-1.5 rounded-full bg-yellow-400"></div>
+                      <div key={idx} className="w-1 h-1 sm:w-1.5 sm:h-1.5 rounded-full bg-yellow-400 shadow-sm"></div>
                     ))}
-                    {dayTodos.length > 3 && <span className="text-[8px] text-gray-400 leading-none">+</span>}
+                    {dayTodos.length > 3 && <span className="hidden sm:inline text-[8px] text-gray-400 leading-none">+</span>}
                  </div>
                )}
             </div>
@@ -492,33 +488,31 @@ export const Dashboard: React.FC<DashboardProps> = ({
         } 
         // Empty cells after end of month
         else {
-          cells.push(<div key={`empty-end-${row}-${i}`} className="h-24 md:h-32 bg-transparent"></div>);
+          cells.push(<div key={`empty-end-${row}-${i}`} className="bg-transparent"></div>);
         }
       }
     }
 
     return (
-      <div className="bg-white/80 p-2 sm:p-6 rounded-[1rem] sm:rounded-[2rem] shadow-xl border-4 border-white/50 relative overflow-hidden">
+      <div className="bg-white/80 p-2 sm:p-6 rounded-xl sm:rounded-[2rem] shadow-xl border-2 sm:border-4 border-white/50 relative overflow-hidden w-full">
          {/* Background Texture */}
          <div className="absolute inset-0 bg-dot-paper opacity-30 pointer-events-none"></div>
 
          <div className="flex justify-between items-center mb-4 sm:mb-8 relative z-10">
-            <button onClick={() => changeMonth(-1)} className="p-2 sm:p-3 hover:bg-white rounded-full shadow-sm text-gray-500 hover:text-blue-500 transition-all"><ChevronLeft /></button>
+            <button onClick={() => changeMonth(-1)} className="p-1 sm:p-3 hover:bg-white rounded-full shadow-sm text-gray-500 hover:text-blue-500 transition-all"><ChevronLeft className="w-5 h-5 sm:w-6 sm:h-6" /></button>
             
             <div className="flex flex-col items-center">
                 {/* Interactive Month Picker */}
                 <div className="relative group">
-                   {/* The Visible "Cute" Text */}
-                   <h2 className="text-2xl md:text-4xl font-cute font-bold text-gray-700 tracking-wide flex items-center gap-2 cursor-pointer group-hover:text-blue-500 transition-colors">
-                     <span className="text-blue-400 group-hover:text-blue-600 transition-colors">{calendarDate.toLocaleDateString('en-US', { month: 'long' })}</span>
-                     <span className="text-gray-300">/</span>
+                   <h2 className="text-lg sm:text-2xl md:text-4xl font-cute font-bold text-gray-700 tracking-wide flex items-center gap-2 cursor-pointer group-hover:text-blue-500 transition-colors">
+                     <span className="text-blue-400 group-hover:text-blue-600 transition-colors whitespace-nowrap">{calendarDate.toLocaleDateString('en-US', { month: 'short' })}</span>
+                     <span className="text-gray-300 hidden sm:inline">/</span>
                      <span className="text-gray-600 group-hover:text-gray-800 transition-colors">{calendarDate.getFullYear()}</span>
                      <div className="w-4 h-4 sm:w-6 sm:h-6 rounded-full bg-blue-50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                         <CalendarDays className="w-3 h-3 sm:w-4 sm:h-4 text-blue-400" />
                      </div>
                    </h2>
                    
-                   {/* Invisible HTML Month Input overlaying the text */}
                    <input 
                       type="month"
                       value={`${calendarDate.getFullYear()}-${String(calendarDate.getMonth() + 1).padStart(2, '0')}`}
@@ -528,7 +522,6 @@ export const Dashboard: React.FC<DashboardProps> = ({
                    />
                 </div>
                 
-                {/* Back to Today Button */}
                 <button 
                   onClick={jumpToToday}
                   className="mt-1 sm:mt-2 text-[10px] sm:text-xs text-blue-400 hover:text-blue-600 font-marker hover:bg-blue-50 px-3 py-1 rounded-full transition-colors flex items-center gap-1 relative z-20"
@@ -537,19 +530,14 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 </button>
             </div>
 
-            <button onClick={() => changeMonth(1)} className="p-2 sm:p-3 hover:bg-white rounded-full shadow-sm text-gray-500 hover:text-blue-500 transition-all"><ChevronRight /></button>
+            <button onClick={() => changeMonth(1)} className="p-1 sm:p-3 hover:bg-white rounded-full shadow-sm text-gray-500 hover:text-blue-500 transition-all"><ChevronRight className="w-5 h-5 sm:w-6 sm:h-6" /></button>
          </div>
          
-         {/* Calendar Grid with 8 columns (1 for week num + 7 for days) */}
-         {/* Added overflow-x-auto for mobile scroll support and min-w to prevent squishing */}
-         <div className="relative z-10 overflow-x-auto -mx-2 px-2 pb-2 sm:overflow-visible sm:mx-0 sm:px-0">
-             <div className="min-w-[700px] sm:min-w-0 grid grid-cols-[50px_repeat(7,_1fr)] sm:grid-cols-[60px_repeat(7,_1fr)] gap-1 sm:gap-3">
+         {/* Responsive Grid Container */}
+         <div className="relative z-10 w-full">
+             {/* Use responsive grid-cols to maximize space */}
+             <div className="grid grid-cols-[25px_repeat(7,_1fr)] sm:grid-cols-[40px_repeat(7,_1fr)] md:grid-cols-[60px_repeat(7,_1fr)] gap-0.5 sm:gap-1 md:gap-3 min-w-0 w-full">
                 {cells}
-             </div>
-             
-             {/* Mobile Scroll Hint (Visible only on small screens) */}
-             <div className="sm:hidden text-center text-gray-400 text-[10px] font-hand mt-2 flex items-center justify-center gap-1 opacity-60">
-                <MousePointer2 className="w-3 h-3 animate-bounce-slow" /> 左右滑动查看完整日历
              </div>
          </div>
       </div>
@@ -557,11 +545,260 @@ export const Dashboard: React.FC<DashboardProps> = ({
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-8">
+    <div className="max-w-7xl mx-auto p-2 sm:p-6 space-y-4 sm:space-y-8 animate-in fade-in duration-500">
       
-      {/* --- Floating Daily Log Modal --- */}
+      {/* Header Bar */}
+      <div className="flex flex-col md:flex-row justify-between items-center gap-4 bg-white/60 p-4 rounded-2xl border border-white/50 backdrop-blur-sm shadow-sm relative z-20">
+        <div className="flex items-center gap-3 w-full md:w-auto justify-between md:justify-start">
+          <div className="flex items-center gap-3">
+             <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-tr from-rose-200 to-orange-100 rounded-full flex items-center justify-center text-xl sm:text-2xl shadow-inner border-2 border-white">
+               🐼
+             </div>
+             <div>
+               <h1 className="text-xl sm:text-3xl font-cute font-bold text-gray-800 tracking-wide">Daily Craft</h1>
+               <div className="text-xs sm:text-sm text-gray-500 font-marker flex items-center gap-2">
+                 <span>{currentTime.toLocaleDateString()}</span>
+                 <span className="text-gray-300">|</span>
+                 <span className="tabular-nums font-mono">{currentTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+               </div>
+             </div>
+          </div>
+          
+          <button 
+             onClick={handleRollDice}
+             className="md:hidden p-2 bg-yellow-100 text-yellow-600 rounded-full hover:bg-yellow-200 transition-colors shadow-sm"
+             title="随机回顾"
+          >
+             <Dice className="w-5 h-5" />
+          </button>
+        </div>
+
+        <div className="flex items-center gap-2 sm:gap-4 w-full md:w-auto">
+          {/* View Toggle */}
+          <div className="flex bg-gray-100/50 p-1 rounded-full border border-gray-200">
+             <button 
+               onClick={() => setViewMode('calendar')}
+               className={`p-1.5 sm:p-2 rounded-full transition-all ${viewMode === 'calendar' ? 'bg-white shadow-sm text-blue-500' : 'text-gray-400 hover:text-gray-600'}`}
+               title="日历视图"
+             >
+               <Calendar className="w-4 h-4 sm:w-5 sm:h-5" />
+             </button>
+             <button 
+               onClick={() => setViewMode('list')}
+               className={`p-1.5 sm:p-2 rounded-full transition-all ${viewMode === 'list' ? 'bg-white shadow-sm text-blue-500' : 'text-gray-400 hover:text-gray-600'}`}
+               title="列表视图"
+             >
+               <ListIcon className="w-4 h-4 sm:w-5 sm:h-5" />
+             </button>
+          </div>
+
+          <div className="h-6 w-px bg-gray-300 hidden sm:block"></div>
+
+          <div className="flex gap-2 flex-grow sm:flex-grow-0 justify-end">
+             <button 
+               onClick={onExportAllWeekly}
+               className="p-2 sm:px-4 sm:py-2 bg-green-100 text-green-700 rounded-full hover:bg-green-200 transition-colors font-bold text-sm flex items-center gap-2 shadow-sm border border-green-200 whitespace-nowrap"
+             >
+               <Archive className="w-4 h-4" /> <span className="hidden sm:inline">导出周报</span>
+             </button>
+             <button 
+               onClick={() => onNewDaily()}
+               className="p-2 sm:px-6 sm:py-2 bg-gray-800 text-white rounded-full hover:bg-gray-700 transition-all hover:scale-105 font-bold shadow-lg flex items-center gap-2 whitespace-nowrap"
+             >
+               <Edit2 className="w-4 h-4" /> <span className="hidden sm:inline">写日记</span>
+             </button>
+             <button 
+                onClick={handleRollDice}
+                className="hidden md:flex p-2 bg-yellow-100 text-yellow-600 rounded-full hover:bg-yellow-200 transition-colors shadow-sm border border-yellow-200"
+                title="随机回顾"
+             >
+                <Dice className="w-5 h-5" />
+             </button>
+          </div>
+        </div>
+      </div>
+      
+      {/* Surprise Box */}
+      {surpriseItem && (
+        <div className="relative bg-yellow-50 border-2 border-dashed border-yellow-300 p-4 rounded-xl shadow-lg animate-in zoom-in-95 mx-auto max-w-lg mb-4">
+           <button onClick={() => setSurpriseItem(null)} className="absolute top-2 right-2 text-yellow-400 hover:text-yellow-600"><X className="w-4 h-4"/></button>
+           <div className="text-center font-hand text-lg text-gray-700">
+              <div className="text-3xl mb-2">{surpriseItem.mood}</div>
+              <div className="mb-2">“{surpriseItem.text}”</div>
+              <div className="text-xs text-yellow-600 font-bold bg-yellow-100 inline-block px-2 py-1 rounded-full">
+                 📅 {formatDate(surpriseItem.date)}
+              </div>
+           </div>
+        </div>
+      )}
+
+      {viewMode === 'calendar' ? (
+        <div className="animate-in slide-in-from-bottom-5 duration-500">
+           {renderCalendar()}
+        </div>
+      ) : (
+        /* List View */
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 animate-in slide-in-from-bottom-5">
+          {/* Daily Logs Column */}
+          <div className="space-y-4">
+            <div className="flex items-center justify-between mb-2 px-2">
+               <h2 className="text-xl font-cute font-bold text-gray-700 flex items-center gap-2">
+                 <Calendar className="w-5 h-5 text-pink-400" /> 日常碎片
+               </h2>
+               <div className="flex gap-2">
+                 <button onClick={() => setShowFilters(!showFilters)} className={`p-1.5 rounded-full ${showFilters ? 'bg-blue-100 text-blue-500' : 'hover:bg-gray-100 text-gray-400'}`}>
+                    <Filter className="w-4 h-4" />
+                 </button>
+               </div>
+            </div>
+
+            {/* Filter Panel */}
+            {showFilters && (
+              <div className="bg-white p-4 rounded-xl shadow-inner border border-gray-100 mb-4 animate-in slide-in-from-top-2">
+                 <div className="grid grid-cols-2 gap-3 mb-3">
+                    <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} className="text-sm border rounded p-1" />
+                    <input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} className="text-sm border rounded p-1" />
+                 </div>
+                 <div className="flex gap-2 mb-3 overflow-x-auto pb-1">
+                    {uniqueMoods.map(m => (
+                       <button 
+                         key={m} 
+                         onClick={() => setSelectedMood(selectedMood === m ? '' : m)}
+                         className={`px-2 py-1 text-xs rounded-full border whitespace-nowrap ${selectedMood === m ? 'bg-blue-500 text-white border-blue-500' : 'bg-white text-gray-600 border-gray-200'}`}
+                       >
+                         {m}
+                       </button>
+                    ))}
+                 </div>
+                 <div className="relative">
+                    <Search className="absolute left-2 top-2 w-4 h-4 text-gray-400" />
+                    <input 
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      placeholder="搜索日记..."
+                      className="w-full pl-8 pr-2 py-1.5 text-sm border border-gray-200 rounded-lg outline-none focus:border-blue-400"
+                    />
+                 </div>
+                 <div className="flex justify-end mt-2">
+                    <button onClick={clearFilters} className="text-xs text-gray-400 hover:text-red-400">清除筛选</button>
+                 </div>
+              </div>
+            )}
+
+            {filteredLogs.length === 0 ? (
+               <div className="text-center py-10 text-gray-400 font-hand text-lg border-2 border-dashed border-gray-200 rounded-2xl">
+                  {hasActiveFilters ? '没有找到相关日记哦' : '还没有日记，快去写一篇吧！'}
+               </div>
+            ) : (
+              filteredLogs.map((log, index) => (
+                <div 
+                  key={log.id}
+                  draggable={canDrag}
+                  onDragStart={(e) => handleDragStart(e, index, 'daily')}
+                  onDragEnter={(e) => handleDragEnter(e, index)}
+                  onDragEnd={handleDragEnd}
+                  onClick={() => onEditDaily(log)}
+                  className={`bg-white p-4 sm:p-5 rounded-2xl shadow-sm border border-gray-100 cursor-pointer transition-all hover:shadow-md hover:-translate-y-1 group relative overflow-hidden animate-in slide-in-from-bottom-2 duration-500`}
+                  style={{ animationDelay: `${index * 50}ms` }}
+                >
+                  {/* Left Color Bar */}
+                  <div className="absolute left-0 top-0 bottom-0 w-1.5" style={{ backgroundColor: log.mood.color }}></div>
+                  
+                  <div className="pl-3">
+                    <div className="flex justify-between items-start mb-2">
+                      <div className="flex items-center gap-2">
+                        <span className="text-2xl">{log.mood.emoji}</span>
+                        <div>
+                          <div className="font-bold text-gray-800 text-lg font-cute leading-none">{formatDate(log.date)}</div>
+                          <div className="text-xs text-gray-400 font-marker">{new Date(log.date).getFullYear()}</div>
+                        </div>
+                      </div>
+                      {canDrag && <GripVertical className="w-4 h-4 text-gray-300 opacity-0 group-hover:opacity-100 cursor-grab" />}
+                    </div>
+                    
+                    <p className="text-gray-600 font-hand text-lg line-clamp-3 leading-relaxed mb-2">
+                      {log.content || <span className="text-gray-300 italic">无文字内容...</span>}
+                    </p>
+
+                    {log.highlights && log.highlights.length > 0 && (
+                      <div className="flex flex-wrap gap-1 mt-2">
+                         {log.highlights.slice(0, 3).map((h, i) => (
+                           <span key={i} className="text-[10px] bg-yellow-50 text-yellow-700 px-1.5 py-0.5 rounded border border-yellow-100 truncate max-w-[150px]">
+                              ✨ {h}
+                           </span>
+                         ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+
+          {/* Weekly Logs Column */}
+          <div className="space-y-4">
+            <div className="flex items-center justify-between mb-2 px-2">
+               <h2 className="text-xl font-cute font-bold text-gray-700 flex items-center gap-2">
+                 <Book className="w-5 h-5 text-blue-400" /> 每周总结
+               </h2>
+               <button onClick={() => onNewWeekly()} className="text-xs bg-blue-50 text-blue-500 px-2 py-1 rounded-full hover:bg-blue-100 font-bold">
+                 + 新建
+               </button>
+            </div>
+
+            {filteredWeekly.length === 0 ? (
+               <div className="text-center py-10 text-gray-400 font-hand text-lg border-2 border-dashed border-gray-200 rounded-2xl bg-gray-50/50">
+                  开始记录你的第一周吧！
+               </div>
+            ) : (
+              filteredWeekly.map((log, index) => (
+                <div 
+                  key={log.id}
+                  draggable={canDrag}
+                  onDragStart={(e) => handleDragStart(e, index, 'weekly')}
+                  onDragEnter={(e) => handleDragEnter(e, index)}
+                  onDragEnd={handleDragEnd}
+                  onClick={() => onEditWeekly(log)}
+                  className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 cursor-pointer transition-all hover:shadow-md hover:-translate-y-1 group relative animate-in slide-in-from-bottom-2 duration-500"
+                  style={{ animationDelay: `${index * 50}ms` }}
+                >
+                   <WashiTape color={log.themeColor || '#d1fae5'} rotation={2} className="-top-2 right-4 w-16 h-4" pattern="dots" />
+                   
+                   <div className="flex items-center gap-3 mb-3">
+                      <div className="bg-green-100 text-green-700 font-bold px-3 py-1 rounded-lg font-marker text-sm">
+                        {log.weekNumber}
+                      </div>
+                      {log.moodSummary && (
+                        <span className="text-sm font-hand text-gray-500">
+                           {log.moodSummary}
+                        </span>
+                      )}
+                   </div>
+
+                   <div className="space-y-1">
+                      {log.highlights && log.highlights.length > 0 ? (
+                        log.highlights.slice(0, 3).map((h, i) => (
+                          <div key={i} className="flex items-center gap-2 text-gray-700 font-hand text-sm">
+                             <span className="text-green-400 text-xs">●</span> {h}
+                          </div>
+                        ))
+                      ) : (
+                        <div className="text-gray-400 text-sm font-hand italic">暂无高光时刻</div>
+                      )}
+                      {log.highlights && log.highlights.length > 3 && (
+                        <div className="text-xs text-gray-400 pl-4">...还有 {log.highlights.length - 3} 条</div>
+                      )}
+                   </div>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Modals */}
       {modalDate && (
-        <DailyLogModal 
+        <DailyLogModal
           dateStr={modalDate}
           existingLog={modalLog}
           onSave={handleModalSave}
@@ -573,7 +810,6 @@ export const Dashboard: React.FC<DashboardProps> = ({
         />
       )}
 
-      {/* --- Floating Weekly Log Modal --- */}
       {modalWeekNumber && (
         <WeeklyLogModal
           weekNumber={modalWeekNumber}
@@ -583,379 +819,6 @@ export const Dashboard: React.FC<DashboardProps> = ({
           availableLogs={logs}
           availableWeeklyLogs={weeklyLogs}
         />
-      )}
-
-      {/* --- Surprise Memory Card Modal --- */}
-      {surpriseItem && (
-        <div 
-          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/30 backdrop-blur-sm p-4 animate-in fade-in"
-          onClick={() => setSurpriseItem(null)}
-        >
-          <div 
-            className="bg-white p-6 pb-8 rounded-sm shadow-2xl max-w-sm w-full transform rotate-2 transition-transform hover:scale-105 duration-300 relative border-[12px] border-white"
-            onClick={(e) => e.stopPropagation()}
-            style={{ boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)' }}
-          >
-             {/* Tape */}
-             <div className="absolute -top-6 left-1/2 -translate-x-1/2 w-32 h-8 bg-pink-300/80 rotate-1 shadow-sm" style={{ clipPath: 'polygon(2% 0%, 98% 0%, 100% 100%, 0% 100%)' }}></div>
-             
-             {/* Photo Area */}
-             <div className="aspect-[4/3] bg-gray-100 mb-6 flex items-center justify-center rounded-sm overflow-hidden relative border border-gray-200">
-                <div className="absolute inset-0 opacity-20 bg-dot-paper"></div>
-                <div className="text-8xl animate-bounce-slow filter drop-shadow-md">{surpriseItem.mood}</div>
-             </div>
-             
-             {/* Text */}
-             <div className="text-center">
-               <p className="font-hand text-2xl text-gray-800 leading-relaxed mb-4 line-clamp-4">
-                 “ {surpriseItem.text} ”
-               </p>
-               <div className="flex items-center justify-center gap-2 text-gray-400 font-marker">
-                  <span>—</span>
-                  <span>{new Date(surpriseItem.date).toLocaleDateString('zh-CN', { year: 'numeric', month: 'long', day: 'numeric' })}</span>
-                  <span>—</span>
-               </div>
-             </div>
-
-             <button 
-               onClick={() => setSurpriseItem(null)}
-               className="absolute -top-3 -right-3 bg-red-400 text-white rounded-full p-1 shadow-md hover:bg-red-500 transition-colors"
-             >
-               <X className="w-4 h-4" />
-             </button>
-          </div>
-        </div>
-      )}
-
-      {/* Header */}
-      <div className="flex flex-col md:flex-row justify-between items-center mb-8 mt-6">
-        <div className="relative mb-6 md:mb-0 text-center md:text-left flex items-center gap-6">
-           <div className="relative">
-             <div className="absolute -top-6 -left-6 animate-wiggle">
-                <Sticker type="bow" size={36} color="#fca5a5" rotation={-15} />
-             </div>
-             
-             <h1 className="text-3xl md:text-5xl font-cute font-bold text-gray-800 relative z-10 transform -rotate-1 drop-shadow-sm">
-              Daily Craft
-             </h1>
-             <div className="absolute -bottom-2 left-0 w-full h-3 bg-yellow-200 -rotate-1 z-0 rounded-full opacity-60"></div>
-           </div>
-
-            {/* Realtime Clock Display */}
-            <div className="hidden sm:flex flex-col items-start border-l-2 border-dashed border-gray-200 pl-4 text-gray-500 font-marker">
-              <div className="flex items-center gap-1.5 text-xl font-bold text-gray-700">
-                <Clock className="w-4 h-4 text-blue-400" />
-                {currentTime.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })}
-              </div>
-              <div className="text-xs">
-                {currentTime.toLocaleDateString('zh-CN', { month: 'long', day: 'numeric', weekday: 'long' })}
-              </div>
-            </div>
-        </div>
-
-        <div className="flex flex-col items-end gap-3 w-full md:w-auto">
-          <div className="flex gap-2 sm:gap-3 w-full md:w-auto items-center justify-center sm:justify-end">
-            <div className="relative group flex-grow md:flex-grow-0 max-w-[150px] sm:max-w-none">
-              <input 
-                type="text" 
-                placeholder="搜索..." 
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full md:w-56 pl-9 pr-4 py-2 rounded-full border border-gray-300 bg-white focus:border-blue-400 focus:outline-none font-hand text-gray-700 transition-all shadow-sm focus:shadow-md text-sm"
-              />
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-            </div>
-            
-            <div className="flex bg-white rounded-full border border-gray-200 p-0.5 shadow-sm">
-               <button 
-                onClick={() => setViewMode('calendar')}
-                className={`p-2 rounded-full transition-all ${viewMode === 'calendar' ? 'bg-blue-100 text-blue-600 shadow-inner' : 'text-gray-400 hover:bg-gray-50'}`}
-                title="日历视图"
-               >
-                 <Calendar className="w-4 h-4" />
-               </button>
-               <button 
-                onClick={() => setViewMode('list')}
-                className={`p-2 rounded-full transition-all ${viewMode === 'list' ? 'bg-blue-100 text-blue-600 shadow-inner' : 'text-gray-400 hover:bg-gray-50'}`}
-                title="列表视图"
-               >
-                 <ListIcon className="w-4 h-4" />
-               </button>
-               <button 
-                onClick={() => setViewMode('grid')}
-                className={`p-2 rounded-full transition-all ${viewMode === 'grid' ? 'bg-blue-100 text-blue-600 shadow-inner' : 'text-gray-400 hover:bg-gray-50'}`}
-                title="网格视图"
-               >
-                 <LayoutGrid className="w-4 h-4" />
-               </button>
-            </div>
-
-            <button 
-              onClick={handleRollDice}
-              className="p-2 rounded-full bg-white border border-gray-200 text-gray-500 hover:bg-yellow-50 hover:text-yellow-600 hover:border-yellow-200 transition-all shadow-sm group hidden sm:block"
-              title="随机回忆 (惊喜骰子)"
-            >
-              <Dice className="w-5 h-5 group-hover:animate-spin" />
-            </button>
-
-            <button 
-              onClick={onExportAllWeekly}
-              className="p-2 rounded-full bg-white border border-gray-200 text-gray-500 hover:bg-green-50 hover:text-green-600 hover:border-green-200 transition-all shadow-sm hidden sm:block"
-              title="汇总周报导出"
-            >
-              <Archive className="w-5 h-5" />
-            </button>
-
-            <button 
-              onClick={onExport}
-              className="p-2 rounded-full bg-white border border-gray-200 text-gray-500 hover:bg-pink-50 hover:text-pink-500 hover:border-pink-200 transition-all shadow-sm hidden sm:block"
-              title="备份全部数据"
-            >
-              <Download className="w-5 h-5" />
-            </button>
-
-            <button 
-              onClick={() => setShowFilters(!showFilters)}
-              className={`p-2 rounded-full border transition-all shadow-sm ${showFilters || hasActiveFilters ? 'bg-orange-50 border-orange-200 text-orange-500' : 'bg-white border-gray-200 text-gray-400 hover:text-gray-600'}`}
-              title="筛选"
-            >
-              <Filter className="w-5 h-5" />
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* Expanded Filters */}
-      {showFilters && (
-        <div className="mb-6 p-4 bg-white rounded-xl border-2 border-dashed border-blue-200 flex flex-col sm:flex-row flex-wrap gap-4 items-center justify-between animate-in fade-in slide-in-from-top-2 relative shadow-sm">
-          <div className="flex flex-wrap gap-4 items-center justify-center sm:justify-start w-full sm:w-auto">
-            <div className="flex items-center gap-2">
-              <span className="font-cute text-lg text-gray-600">日期:</span>
-              <input 
-                type="date" 
-                value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
-                className="bg-gray-50 border border-gray-200 rounded px-2 py-1 text-sm font-hand text-gray-700 focus:border-blue-300 outline-none"
-              />
-              <span className="text-gray-400">-</span>
-              <input 
-                type="date" 
-                value={endDate}
-                onChange={(e) => setEndDate(e.target.value)}
-                className="bg-gray-50 border border-gray-200 rounded px-2 py-1 text-sm font-hand text-gray-700 focus:border-blue-300 outline-none"
-              />
-            </div>
-
-            <div className="flex items-center gap-2">
-              <span className="font-cute text-lg text-gray-600">心情:</span>
-              <select 
-                value={selectedMood} 
-                onChange={(e) => setSelectedMood(e.target.value)}
-                className="bg-gray-50 border border-gray-200 rounded px-2 py-1 text-sm font-hand text-gray-700 focus:border-blue-300 outline-none min-w-[100px]"
-              >
-                <option value="">全部</option>
-                {uniqueMoods.map(m => (
-                  <option key={m} value={m}>{m}</option>
-                ))}
-              </select>
-            </div>
-            
-            {/* Mobile Only Extra Buttons */}
-            <div className="flex sm:hidden gap-2 w-full justify-center border-t pt-2 border-gray-100">
-                <button onClick={handleRollDice} className="p-2 bg-yellow-50 rounded-full text-yellow-600"><Dice className="w-4 h-4"/></button>
-                <button onClick={onExportAllWeekly} className="p-2 bg-green-50 rounded-full text-green-600"><Archive className="w-4 h-4"/></button>
-                <button onClick={onExport} className="p-2 bg-pink-50 rounded-full text-pink-500"><Download className="w-4 h-4"/></button>
-            </div>
-          </div>
-
-          <button 
-            onClick={clearFilters}
-            className="text-sm text-red-500 hover:text-red-600 font-marker flex items-center gap-1 px-3 py-1 hover:bg-red-50 rounded-full transition-colors whitespace-nowrap border border-transparent hover:border-red-100"
-          >
-            <X className="w-3 h-3" /> 重置
-          </button>
-        </div>
-      )}
-
-      {/* Main Content Area */}
-      {viewMode === 'calendar' ? (
-        renderCalendar()
-      ) : (
-        /* Two Column Layout */
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 min-h-[500px]">
-          
-          {/* --- Left Column: Daily Logs --- */}
-          <div className="flex flex-col gap-4">
-            <div className="flex items-center justify-between mb-2 border-b-2 border-gray-100 pb-2">
-               <div className="flex items-center gap-2">
-                  <Calendar className="w-5 h-5 text-blue-400" />
-                  <h2 className="text-2xl font-cute font-bold text-gray-800">每日便签</h2>
-                  <span className="bg-blue-50 text-blue-500 text-xs px-2 py-0.5 rounded-full font-bold">{filteredLogs.length}</span>
-               </div>
-               <button 
-                 onClick={() => onNewDaily()} 
-                 className="flex items-center gap-1 text-sm bg-blue-50 text-blue-600 px-3 py-1.5 rounded-full hover:bg-blue-100 transition-colors font-bold shadow-sm"
-               >
-                 <Plus className="w-3 h-3" /> 新建
-               </button>
-            </div>
-
-            <div className={`flex flex-col gap-3 ${viewMode === 'grid' ? 'grid grid-cols-2' : ''}`}>
-               {filteredLogs.length === 0 ? (
-                 <div className="py-12 text-center opacity-60 flex flex-col items-center">
-                   <Sticker type="cat" size={48} color="#e2e8f0" />
-                   <p className="mt-2 font-hand text-gray-400">还没有记录哦...</p>
-                 </div>
-               ) : (
-                 filteredLogs.map((log, index) => (
-                   viewMode === 'list' ? (
-                     // List View Item
-                     <div 
-                       key={log.id} 
-                       className="animate-in fade-in slide-in-from-bottom-2 duration-500"
-                       style={{ animationDelay: `${index * 0.05}s`, animationFillMode: 'both' }}
-                     >
-                        <div 
-                            draggable={canDrag}
-                            onDragStart={(e) => handleDragStart(e, index, 'daily')}
-                            onDragEnter={(e) => handleDragEnter(e, index)}
-                            onDragEnd={handleDragEnd}
-                            onDragOver={(e) => e.preventDefault()}
-                            onClick={() => onEditDaily(log)}
-                            className="group bg-white rounded-xl shadow-sm border border-gray-100 p-3 flex items-center gap-3 cursor-pointer hover:shadow-md hover:border-blue-300 transition-all transform hover:-translate-x-1"
-                        >
-                            {canDrag && <div className="text-gray-200 group-hover:text-gray-400 cursor-grab active:cursor-grabbing"><GripVertical className="w-4 h-4" /></div>}
-                            
-                            {/* Date Badge - Updated to Blue Theme */}
-                            <div className="flex-shrink-0 flex flex-col items-center justify-center w-12 h-12 bg-blue-50 rounded-lg border border-blue-100">
-                              <span className="text-xs font-bold text-blue-400 uppercase">{new Date(log.date).toLocaleDateString('en-US', { weekday: 'short' })}</span>
-                              <span className="text-lg font-bold text-blue-600 font-marker">{new Date(log.date).getDate()}</span>
-                            </div>
-
-                            {/* Content */}
-                            <div className="flex-grow min-w-0">
-                              <div className="text-sm font-bold text-blue-800 font-sans mb-1">{formatTimeSimple(log.date)}</div>
-                              <div className="text-gray-800 font-hand text-lg truncate leading-tight group-hover:text-blue-600 transition-colors">
-                                {log.content || <span className="text-gray-300 italic">空白的记录...</span>}
-                              </div>
-                            </div>
-
-                            {/* Mood */}
-                            <div className="flex-shrink-0 flex flex-col items-end">
-                              <div className="text-2xl filter drop-shadow-sm transform group-hover:scale-110 transition-transform" title={log.mood.sentiment}>{log.mood.emoji}</div>
-                            </div>
-                        </div>
-                     </div>
-                   ) : (
-                     // Grid View Item (Small Card)
-                     <div 
-                        key={log.id}
-                        onClick={() => onEditDaily(log)}
-                        className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 cursor-pointer hover:shadow-md hover:-translate-y-1 transition-all relative overflow-hidden"
-                     >
-                        <div className="absolute top-0 left-0 w-1 h-full" style={{ backgroundColor: log.mood.color }}></div>
-                        <div className="flex justify-between items-start mb-2">
-                          <span className="font-marker text-gray-500 text-sm">{formatDate(log.date)}</span>
-                          <span className="text-xl">{log.mood.emoji}</span>
-                        </div>
-                        <p className="text-gray-700 font-hand text-sm line-clamp-3 leading-relaxed">
-                          {log.content || "..."}
-                        </p>
-                     </div>
-                   )
-                 ))
-               )}
-            </div>
-          </div>
-
-          {/* --- Right Column: Weekly Logs --- */}
-          <div className="flex flex-col gap-4">
-            <div className="flex items-center justify-between mb-2 border-b-2 border-gray-100 pb-2">
-               <div className="flex items-center gap-2">
-                  <Book className="w-5 h-5 text-green-500" />
-                  <h2 className="text-2xl font-cute font-bold text-gray-800">每周总结</h2>
-                  <span className="bg-green-50 text-green-600 text-xs px-2 py-0.5 rounded-full font-bold">{filteredWeekly.length}</span>
-               </div>
-               <button 
-                 onClick={() => onNewWeekly()} 
-                 className="flex items-center gap-1 text-sm bg-green-50 text-green-600 px-3 py-1.5 rounded-full hover:bg-green-100 transition-colors font-bold shadow-sm"
-               >
-                 <Plus className="w-3 h-3" /> 新建
-               </button>
-            </div>
-
-            <div className={`flex flex-col gap-3 ${viewMode === 'grid' ? 'grid grid-cols-2' : ''}`}>
-               {filteredWeekly.length === 0 ? (
-                 <div className="py-12 text-center opacity-60 flex flex-col items-center">
-                   <Sticker type="cloud" size={48} color="#e2e8f0" />
-                   <p className="mt-2 font-hand text-gray-400">还没有总结哦...</p>
-                 </div>
-               ) : (
-                 filteredWeekly.map((log, index) => (
-                   viewMode === 'list' ? (
-                     // List View Item
-                     <div 
-                       key={log.id} 
-                       className="animate-in fade-in slide-in-from-bottom-2 duration-500"
-                       style={{ animationDelay: `${index * 0.05}s`, animationFillMode: 'both' }}
-                     >
-                        <div 
-                            draggable={canDrag}
-                            onDragStart={(e) => handleDragStart(e, index, 'weekly')}
-                            onDragEnter={(e) => handleDragEnter(e, index)}
-                            onDragEnd={handleDragEnd}
-                            onDragOver={(e) => e.preventDefault()}
-                            onClick={() => onEditWeekly(log)}
-                            className="group bg-white rounded-xl shadow-sm border border-gray-100 p-3 flex items-center gap-3 cursor-pointer hover:shadow-md hover:border-green-300 transition-all transform hover:-translate-x-1"
-                        >
-                            {canDrag && <div className="text-gray-200 group-hover:text-gray-400 cursor-grab active:cursor-grabbing"><GripVertical className="w-4 h-4" /></div>}
-                            
-                            {/* Week Badge */}
-                            <div className="flex-shrink-0 flex flex-col items-center justify-center w-12 h-12 bg-green-50 rounded-lg border border-green-100 text-green-700">
-                              <span className="text-[10px] font-bold uppercase">Week</span>
-                              <span className="text-lg font-bold font-marker">{log.weekNumber.split('-W')[1]}</span>
-                            </div>
-
-                            {/* Content */}
-                            <div className="flex-grow min-w-0">
-                              <div className="flex items-center gap-2 mb-1">
-                                  <span className="text-sm font-bold text-gray-500 font-sans">{log.weekNumber.split('-')[0]}</span>
-                                  {log.moodSummary && <span className="text-[10px] px-1.5 py-0.5 rounded bg-yellow-50 text-yellow-600 border border-yellow-100">{log.moodSummary}</span>}
-                              </div>
-                              <div className="text-gray-800 font-hand text-lg truncate leading-tight group-hover:text-green-600 transition-colors">
-                                {log.content || <span className="text-gray-300 italic">写点什么总结下...</span>}
-                              </div>
-                            </div>
-
-                            {/* Arrow/Action */}
-                            <div className="flex-shrink-0 text-gray-300 group-hover:text-green-400 transition-colors">
-                              <Edit2 className="w-4 h-4" />
-                            </div>
-                        </div>
-                     </div>
-                   ) : (
-                     // Grid View Item
-                     <div 
-                        key={log.id}
-                        onClick={() => onEditWeekly(log)}
-                        className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 cursor-pointer hover:shadow-md hover:-translate-y-1 transition-all relative overflow-hidden"
-                     >
-                        <div className="absolute top-0 left-0 w-full h-1 bg-green-200"></div>
-                        <div className="flex justify-between items-center mb-2 mt-1">
-                          <span className="bg-green-50 text-green-700 text-xs font-bold px-2 py-0.5 rounded border border-green-100">{log.weekNumber}</span>
-                          <span className="text-xs font-hand text-gray-500">{log.moodSummary}</span>
-                        </div>
-                        <p className="text-gray-700 font-hand text-sm line-clamp-3 leading-relaxed">
-                          {log.content || "..."}
-                        </p>
-                     </div>
-                   )
-                 ))
-               )}
-            </div>
-          </div>
-
-        </div>
       )}
     </div>
   );
