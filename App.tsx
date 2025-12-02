@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Dashboard } from './components/Dashboard';
 import { Editor } from './components/Editor';
@@ -7,6 +6,7 @@ import { LogEntry, WeeklyLogEntry, ViewMode, TodoItem } from './types';
 import { Sticker } from './components/Sticker';
 import { BackgroundAudio } from './components/BackgroundAudio';
 import { TodoModule } from './components/TodoModule';
+import { PandaTrail } from './components/PandaTrail';
 import { 
   getLogs, saveLog, deleteLog, createEmptyLog, saveAllLogs,
   getWeeklyLogs, saveWeeklyLog, deleteWeeklyLog, createEmptyWeeklyLog, saveAllWeeklyLogs,
@@ -260,6 +260,7 @@ const App: React.FC = () => {
       </div>
 
       <BackgroundAudio />
+      <PandaTrail />
       <TodoModule onTaskCompleted={handleTodoCompleted} />
 
       <div className="relative z-10 pt-6">

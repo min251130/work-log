@@ -1,47 +1,67 @@
-
 import React, { useEffect, useRef } from 'react';
 
 export const PandaTrail: React.FC = () => {
   const lastTimeRef = useRef<number>(0);
 
   useEffect(() => {
-    const handleMouseMove = (e: MouseEvent) => {
-        const now = Date.now();
-        if (now - lastTimeRef.current < 40) return; // Limit creation rate (throttle)
-        lastTimeRef.current = now;
+    const handleMove = (x: number, y: number) => {
+      const now = Date.now();
+      // Throttle creation to avoid too many DOM elements
+      if (now - lastTimeRef.current < 50) return; 
+      lastTimeRef.current = now;
 
-        createParticle(e.clientX, e.clientY);
+      createParticle(x, y);
     };
 
-    window.addEventListener('mousemove', handleMouseMove);
-    return () => window.removeEventListener('mousemove', handleMouseMove);
+    const onMouseMove = (e: MouseEvent) => {
+      handleMove(e.clientX, e.clientY);
+    };
+
+    const onTouchMove = (e: TouchEvent) => {
+      if (e.touches.length > 0) {
+        handleMove(e.touches[0].clientX, e.touches[0].clientY);
+      }
+    };
+
+    window.addEventListener('mousemove', onMouseMove);
+    window.addEventListener('touchmove', onTouchMove, { passive: true });
+
+    return () => {
+      window.removeEventListener('mousemove', onMouseMove);
+      window.removeEventListener('touchmove', onTouchMove);
+    };
   }, []);
 
   const createParticle = (x: number, y: number) => {
     const el = document.createElement('div');
-    const emojis = ['🐼', '🐾', '🐾', '🎋']; // High chance of paw prints
+    // Increased variety of cute emojis
+    const emojis = ['🐼', '🐾', '🐾', '🎋', '✨', '🌸', '💫']; 
     el.innerText = emojis[Math.floor(Math.random() * emojis.length)];
     el.style.position = 'fixed';
     
-    // Offset slightly to the bottom right so it doesn't cover the cursor tip
-    el.style.left = `${x + 15}px`;
-    el.style.top = `${y + 15}px`;
+    // Offset slightly so it follows gracefully
+    el.style.left = `${x}px`;
+    el.style.top = `${y}px`;
     
-    el.style.fontSize = `${Math.random() * 10 + 14}px`; // 14-24px
+    el.style.fontSize = `${Math.random() * 12 + 10}px`; // 10-22px
     el.style.pointerEvents = 'none';
     el.style.zIndex = '9999';
     el.style.userSelect = 'none';
+    el.style.cursor = 'default';
+    
     // Initial State
-    el.style.opacity = '1';
-    el.style.transform = `translate(0, 0) scale(0.5) rotate(${Math.random() * 40 - 20}deg)`;
-    el.style.transition = 'transform 0.8s cubic-bezier(0,0,0.2,1), opacity 0.8s ease-out';
+    el.style.opacity = '0.8';
+    el.style.transform = `translate(-50%, -50%) scale(0.5) rotate(${Math.random() * 40 - 20}deg)`;
+    el.style.transition = 'transform 1s cubic-bezier(0,0,0.2,1), opacity 1s ease-out';
     
     document.body.appendChild(el);
 
     // Animate
     requestAnimationFrame(() => {
-       // End State - Float down and fade out
-       el.style.transform = `translate(10px, 30px) scale(1.2) rotate(${Math.random() * 90 - 45}deg)`;
+       // End State - Float down/up randomly and fade out
+       const xOffset = (Math.random() - 0.5) * 30;
+       const yOffset = 20 + Math.random() * 20;
+       el.style.transform = `translate(calc(-50% + ${xOffset}px), calc(-50% + ${yOffset}px)) scale(1.2) rotate(${Math.random() * 90 - 45}deg)`;
        el.style.opacity = '0';
     });
 
@@ -50,7 +70,7 @@ export const PandaTrail: React.FC = () => {
         if (document.body.contains(el)) {
             document.body.removeChild(el);
         }
-    }, 800);
+    }, 1000);
   }
 
   return null;
